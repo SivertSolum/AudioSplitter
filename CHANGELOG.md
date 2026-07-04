@@ -23,6 +23,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Changed
 
+### Fixed
+
+### Removed
+
+## [0.1.8] - 2026-07-04
+### Added
+
+### Changed
+
 - Release CI bundles CPU-only PyTorch so the desktop zip stays under GitHub's 2 GB asset limit (GPU builds exceed it); install CUDA wheels locally for a faster GPU build
 - PyInstaller bundle: minimal demucs hook (inference modules only), exclude torch compile/profiler stacks and demucs training CLI modules
 
