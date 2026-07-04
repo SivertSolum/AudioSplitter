@@ -21,6 +21,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 ## [Unreleased]
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.1.2] - 2026-07-04
+### Added
+
 - YouTube URL input in the desktop app: download audio to a temp cache, preview the full track, then split
 - CLI `splitter split --url` for downloading and separating a YouTube video in one command
 - Optional `--keep-download` flag to retain the temporary YouTube audio file after CLI separation
