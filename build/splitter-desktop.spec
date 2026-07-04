@@ -10,25 +10,13 @@ hooks_dir = project_root / "build" / "hooks"
 ui_src = project_root / "src" / "splitter" / "desktop" / "ui"
 icon_src = ui_src / "audiosplitter-icon.ico"
 
-# Trim torch bloat: custom hooks in build/hooks/ replace contrib collect_submodules("torch").
-# torch/torchaudio are not passed to collect_all().
+# Only exclude torch subpackages not imported during normal nn/inference startup.
+# Aggressive excludes (jit, package, distributed, etc.) break the packaged app.
 TORCH_EXCLUDES = [
     "torch.testing",
     "torch.testing._internal",
     "torch.onnx",
-    "torch._export",
-    "torch.export",
-    "torch.fx",
-    "torch.jit",
-    "torch.quantization",
-    "torch.ao.quantization",
     "torch.utils.tensorboard",
-    "torch._dynamo",
-    "torch._inductor",
-    "torch._functorch",
-    "torch.profiler",
-    "torch.compiler",
-    "torch.package",
     "tensorboard",
     "torchvision",
     "torchtext",

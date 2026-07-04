@@ -25,6 +25,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- Packaged desktop app startup: stop excluding core torch modules (`torch.package`, `torch.distributed.rpc`, jit internals) that PyTorch imports during `torch.nn` initialization
+
 ### Removed
 
 ## [0.1.9] - 2026-07-04
@@ -35,6 +37,7 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 ### Fixed
 
 - Fixes
+
 
 ### Removed
 
