@@ -23,6 +23,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Changed
 
+### Fixed
+
+### Removed
+
+## [0.1.6] - 2026-07-04
+### Added
+
+### Changed
+
 - Track maintained Demucs fork ([adefossez/demucs](https://github.com/adefossez/demucs) 4.1.0a3) instead of archived Meta PyPI release 4.0.1; local `load_track()` uses `demucs.audio` APIs removed from the fork CLI module
 - Stem save dialog defaults to WAV and only offers audio export formats; non-WAV exports use ffmpeg when available
 - Desktop file dialogs use pywebview `FileDialog` constants instead of deprecated `OPEN_DIALOG` / `SAVE_DIALOG`
