@@ -3,8 +3,26 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from splitter.desktop.api import DesktopApi
+from splitter.desktop.app import _ui_directory
 from splitter.separator import SeparationOptions
+
+
+def test_ui_directory_points_to_packaged_assets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("splitter.desktop.app.sys.frozen", True, raising=False)
+    monkeypatch.setattr("splitter.desktop.app.sys._MEIPASS", "/bundle", raising=False)
+    assert _ui_directory() == Path("/bundle") / "splitter" / "desktop" / "ui"
+
+
+def test_ui_directory_points_to_dev_assets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    desktop_dir = tmp_path / "desktop"
+    ui_dir = desktop_dir / "ui"
+    ui_dir.mkdir(parents=True)
+    monkeypatch.setattr("splitter.desktop.app.sys.frozen", False, raising=False)
+    monkeypatch.setattr("splitter.desktop.app._resource_root", lambda: desktop_dir)
+    assert _ui_directory() == ui_dir
 
 
 def test_desktop_api_get_available_stems(tmp_path: Path) -> None:

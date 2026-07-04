@@ -25,6 +25,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- Packaged desktop app now loads UI assets from the PyInstaller bundle path (`splitter/desktop/ui`) instead of a missing `ui/` folder
+
 ### Removed
 
 ## [0.1.2] - 2026-07-04

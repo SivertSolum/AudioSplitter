@@ -18,7 +18,10 @@ def _default_output_dir() -> Path:
 
 
 def _ui_directory() -> Path:
-    return _resource_root() / "ui"
+    root = _resource_root()
+    if getattr(sys, "frozen", False):
+        return root / "splitter" / "desktop" / "ui"
+    return root / "ui"
 
 
 def main() -> None:
