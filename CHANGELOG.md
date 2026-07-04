@@ -37,6 +37,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- Packaged desktop app startup crash: include `torch.distributed` in the PyInstaller bundle (required by `torch.utils.data` even for CPU-only inference)
+
 ### Removed
 
 ## [0.1.7] - 2026-07-04

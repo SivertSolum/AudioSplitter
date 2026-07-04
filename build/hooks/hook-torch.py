@@ -53,6 +53,9 @@ if is_module_satisfies("PyInstaller >= 6.0"):
         "torch.storage",
         "torch.utils",
         "torch.utils.data",
+        "torch.utils.data.dataloader",
+        "torch.distributed",
+        "torch.distributed.distributed_c10d",
     ]
 
     if compat.is_win:
