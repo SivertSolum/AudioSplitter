@@ -10,12 +10,9 @@ hooks_dir = project_root / "build" / "hooks"
 ui_src = project_root / "src" / "splitter" / "desktop" / "ui"
 icon_src = ui_src / "audiosplitter-icon.ico"
 
-# Only exclude torch subpackages not imported during normal nn/inference startup.
-# Aggressive excludes (jit, package, distributed, etc.) break the packaged app.
+# Do not exclude torch.* subpackages — PyTorch imports many of them at nn startup
+# (distributed, package, testing, gradcheck, etc.). Optional third-party packages only.
 TORCH_EXCLUDES = [
-    "torch.testing",
-    "torch.testing._internal",
-    "torch.onnx",
     "torch.utils.tensorboard",
     "tensorboard",
     "torchvision",

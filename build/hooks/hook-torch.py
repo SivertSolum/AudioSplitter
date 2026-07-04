@@ -63,6 +63,8 @@ if is_module_satisfies("PyInstaller >= 6.0"):
         "torch._awaits",
         "torch._sources",
         "torch.futures",
+        "torch.testing",
+        "torch.autograd.gradcheck",
     ]
 
     if compat.is_win:
