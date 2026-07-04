@@ -23,6 +23,10 @@ You do **not** need to create the version heading or date manually.
 
 ### Added
 
+- Three separation modes in the desktop app and CLI: **Full** (four stems), **Vocal split** (vocals + instrumental), and **Custom** (user-selected stems)
+- Desktop split mode selector with stem checkboxes for custom mode
+- CLI flags `--mode` and `--stems` for choosing separation mode
+
 ### Changed
 
 ### Fixed

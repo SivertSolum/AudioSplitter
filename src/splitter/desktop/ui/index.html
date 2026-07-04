@@ -17,6 +17,54 @@
       </header>
 
       <section class="card">
+        <h2 class="section-title">Split mode</h2>
+        <div class="mode-options" role="radiogroup" aria-label="Split mode">
+          <label class="mode-option">
+            <input type="radio" name="split-mode" value="full" checked />
+            <span>
+              <strong>Full</strong>
+              <span class="muted">Vocals, drums, bass, and other</span>
+            </span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="split-mode" value="vocal_split" />
+            <span>
+              <strong>Vocal split</strong>
+              <span class="muted">Vocals and instrumental</span>
+            </span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="split-mode" value="custom" />
+            <span>
+              <strong>Custom</strong>
+              <span class="muted">Choose which stems to export</span>
+            </span>
+          </label>
+        </div>
+        <div id="custom-stems" class="custom-stems" hidden>
+          <p class="muted">Select stems to export:</p>
+          <div class="stem-checkboxes">
+            <label class="stem-checkbox">
+              <input type="checkbox" name="custom-stem" value="vocals" checked />
+              Vocals
+            </label>
+            <label class="stem-checkbox">
+              <input type="checkbox" name="custom-stem" value="drums" checked />
+              Drums
+            </label>
+            <label class="stem-checkbox">
+              <input type="checkbox" name="custom-stem" value="bass" checked />
+              Bass
+            </label>
+            <label class="stem-checkbox">
+              <input type="checkbox" name="custom-stem" value="other" checked />
+              Other
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
         <div class="actions">
           <button id="pick-file" type="button">Select audio file</button>
           <button id="open-folder" type="button" class="secondary" disabled>Open output folder</button>
@@ -31,7 +79,7 @@
           <div>
             <h2 id="status-title">Waiting for a file</h2>
             <p id="status-message" class="muted">
-              Choose a track to split it into four stems. Models download on first run.
+              Choose a split mode, then select a track. Models download on first run.
             </p>
             <p id="elapsed" class="elapsed" hidden></p>
             <p id="error-message" class="error" hidden></p>

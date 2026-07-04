@@ -7,8 +7,11 @@ import torch
 
 DeviceChoice = Literal["auto", "cpu", "cuda"]
 ModelName = Literal["htdemucs", "htdemucs_ft"]
+SeparationMode = Literal["full", "vocal_split", "custom"]
 
 DEFAULT_MODEL: ModelName = "htdemucs_ft"
+DEFAULT_SEPARATION_MODE: SeparationMode = "full"
+SUPPORTED_SEPARATION_MODES: tuple[SeparationMode, ...] = ("full", "vocal_split", "custom")
 SUPPORTED_MODELS: tuple[ModelName, ...] = ("htdemucs", "htdemucs_ft")
 FOUR_STEM_OUTPUTS = ("vocals", "drums", "bass", "other")
 TWO_STEM_SOURCES = FOUR_STEM_OUTPUTS

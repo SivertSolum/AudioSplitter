@@ -11,10 +11,14 @@ from rich.table import Table
 from splitter import __version__
 from splitter.models import (
     DEFAULT_MODEL,
+    DEFAULT_SEPARATION_MODE,
+    FOUR_STEM_OUTPUTS,
     SUPPORTED_MODELS,
+    SUPPORTED_SEPARATION_MODES,
     TWO_STEM_SOURCES,
     DeviceChoice,
     ModelName,
+    SeparationMode,
     resolve_device,
 )
 from splitter.separator import (
@@ -41,11 +45,22 @@ def _print_device_warning(resolved) -> None:
         )
 
 
+def _parse_stems_option(stems: Optional[str]) -> tuple[str, ...] | None:
+    if stems is None:
+        return None
+    parsed = tuple(part.strip() for part in stems.split(",") if part.strip())
+    if not parsed:
+        raise ValueError("Custom mode requires at least one stem in --stems.")
+    return parsed
+
+
 def _run_split(
     input_path: Path,
     output_dir: Path,
     model: ModelName,
     device: DeviceChoice,
+    mode: SeparationMode,
+    selected_stems: tuple[str, ...] | None,
     two_stems: Optional[str],
 ) -> None:
     resolved = resolve_device(device)
@@ -54,6 +69,8 @@ def _run_split(
     options = SeparationOptions(
         model=model,
         device=device,
+        mode=mode,
+        selected_stems=selected_stems,
         two_stems=two_stems,
         progress=True,
     )
@@ -95,10 +112,24 @@ def split_command(
         "--two-stems",
         help="Keep only one stem plus its complement, e.g. vocals -> vocals + no_vocals.",
     ),
+    mode: SeparationMode = typer.Option(
+        DEFAULT_SEPARATION_MODE,
+        "--mode",
+        "-M",
+        help="Separation mode: full, vocal_split, or custom.",
+    ),
+    stems: Optional[str] = typer.Option(
+        None,
+        "--stems",
+        help="Comma-separated stems for custom mode, e.g. vocals,drums.",
+    ),
 ) -> None:
     """Separate one audio file into stems."""
     try:
-        _run_split(input_path, output_dir, model, device, two_stems)
+        selected_stems = _parse_stems_option(stems)
+        if mode == "custom" and selected_stems is None:
+            raise ValueError("Custom mode requires --stems with at least one stem.")
+        _run_split(input_path, output_dir, model, device, mode, selected_stems, two_stems)
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
@@ -130,9 +161,23 @@ def batch_command(
         "--two-stems",
         help="Keep only one stem plus its complement, e.g. vocals -> vocals + no_vocals.",
     ),
+    mode: SeparationMode = typer.Option(
+        DEFAULT_SEPARATION_MODE,
+        "--mode",
+        "-M",
+        help="Separation mode: full, vocal_split, or custom.",
+    ),
+    stems: Optional[str] = typer.Option(
+        None,
+        "--stems",
+        help="Comma-separated stems for custom mode, e.g. vocals,drums.",
+    ),
 ) -> None:
     """Separate every supported audio file in a directory."""
     try:
+        selected_stems = _parse_stems_option(stems)
+        if mode == "custom" and selected_stems is None:
+            raise ValueError("Custom mode requires --stems with at least one stem.")
         files = list(iter_audio_files(input_dir))
         resolved = resolve_device(device)
         _print_device_warning(resolved)
@@ -140,6 +185,8 @@ def batch_command(
         options = SeparationOptions(
             model=model,
             device=device,
+            mode=mode,
+            selected_stems=selected_stems,
             two_stems=two_stems,
             progress=True,
         )
@@ -168,6 +215,8 @@ def info_command() -> None:
     table.add_row("ffmpeg on PATH", "yes" if ffmpeg_available() else "no")
     console.print(table)
 
+    console.print("\n[bold]Separation modes:[/bold] " + ", ".join(SUPPORTED_SEPARATION_MODES))
+    console.print("[bold]Available stems:[/bold] " + ", ".join(FOUR_STEM_OUTPUTS))
     console.print("\n[bold]Two-stem sources:[/bold] " + ", ".join(TWO_STEM_SOURCES))
     console.print(
         "\n[dim]First run downloads model weights (~300 MB for htdemucs, ~1.3 GB for htdemucs_ft).[/dim]"

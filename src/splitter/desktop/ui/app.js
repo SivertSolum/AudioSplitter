@@ -3,6 +3,7 @@ const STEM_LABELS = {
   drums: "Drums",
   bass: "Bass",
   other: "Other",
+  no_vocals: "Instrumental",
 };
 
 const pickFileButton = document.getElementById("pick-file");
@@ -17,6 +18,9 @@ const elapsedLabel = document.getElementById("elapsed");
 const errorMessage = document.getElementById("error-message");
 const stemSection = document.getElementById("stem-section");
 const stemGrid = document.getElementById("stem-grid");
+const customStemsPanel = document.getElementById("custom-stems");
+const modeInputs = document.querySelectorAll('input[name="split-mode"]');
+const customStemInputs = document.querySelectorAll('input[name="custom-stem"]');
 
 let pollTimer = null;
 let elapsedTimer = null;
@@ -25,6 +29,30 @@ let currentInputPath = null;
 
 function api() {
   return window.pywebview.api;
+}
+
+function getSelectedMode() {
+  const selected = document.querySelector('input[name="split-mode"]:checked');
+  return selected ? selected.value : "full";
+}
+
+function getSelectedCustomStems() {
+  return Array.from(customStemInputs)
+    .filter((input) => input.checked)
+    .map((input) => input.value);
+}
+
+function updateModeUi() {
+  const mode = getSelectedMode();
+  customStemsPanel.hidden = mode !== "custom";
+  updatePickFileState();
+}
+
+function updatePickFileState() {
+  const mode = getSelectedMode();
+  const customInvalid = mode === "custom" && getSelectedCustomStems().length === 0;
+  const isBusy = statusDot.classList.contains("active");
+  pickFileButton.disabled = customInvalid || isBusy;
 }
 
 function setStatus(status, message, error) {
@@ -55,6 +83,7 @@ function setStatus(status, message, error) {
     errorMessage.hidden = true;
     errorMessage.textContent = "";
   }
+  updatePickFileState();
 }
 
 function startElapsedTimer() {
@@ -90,11 +119,13 @@ async function pollStatus() {
     await renderStems(status.stems);
     window.clearInterval(pollTimer);
     pollTimer = null;
+    updatePickFileState();
   } else if (status.status === "error") {
     stopElapsedTimer();
     pickFileButton.disabled = false;
     window.clearInterval(pollTimer);
     pollTimer = null;
+    updatePickFileState();
   }
 }
 
@@ -139,6 +170,9 @@ async function renderStems(stems) {
 }
 
 async function handlePickFile() {
+  const mode = getSelectedMode();
+  const selectedStems = mode === "custom" ? getSelectedCustomStems() : null;
+
   const inputPath = await api().pick_input_file();
   if (!inputPath) {
     return;
@@ -156,11 +190,12 @@ async function handlePickFile() {
   setStatus("queued", "Starting separation…", null);
   startElapsedTimer();
 
-  const result = await api().start_separation(inputPath);
+  const result = await api().start_separation(inputPath, mode, selectedStems);
   if (!result.ok) {
     stopElapsedTimer();
     pickFileButton.disabled = false;
     setStatus("error", "Could not start separation.", result.error);
+    updatePickFileState();
     return;
   }
 
@@ -189,6 +224,14 @@ async function handleDownloadAll() {
   }
 }
 
+modeInputs.forEach((input) => {
+  input.addEventListener("change", updateModeUi);
+});
+
+customStemInputs.forEach((input) => {
+  input.addEventListener("change", updatePickFileState);
+});
+
 pickFileButton.addEventListener("click", handlePickFile);
 openFolderButton.addEventListener("click", async () => {
   const result = await api().open_output_folder();
@@ -199,5 +242,6 @@ openFolderButton.addEventListener("click", async () => {
 downloadAllButton.addEventListener("click", handleDownloadAll);
 
 window.addEventListener("pywebviewready", () => {
-  setStatus("idle", "Choose a track to split it into four stems.", null);
+  updateModeUi();
+  setStatus("idle", "Choose a split mode, then select a track.", null);
 });

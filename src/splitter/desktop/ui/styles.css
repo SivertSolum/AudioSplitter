@@ -133,6 +133,56 @@ button:disabled {
   margin-bottom: 16px;
 }
 
+.section-title {
+  margin: 0 0 14px;
+  font-size: 1rem;
+}
+
+.mode-options {
+  display: grid;
+  gap: 10px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #27272a;
+  border-radius: 12px;
+  background: rgba(9, 9, 11, 0.45);
+  cursor: pointer;
+}
+
+.mode-option input {
+  margin-top: 3px;
+}
+
+.mode-option strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.custom-stems {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #27272a;
+}
+
+.stem-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 8px;
+}
+
+.stem-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
 .stem-grid {
   display: grid;
   gap: 16px;

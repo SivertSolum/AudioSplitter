@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from splitter.models import FOUR_STEM_OUTPUTS, SUPPORTED_SEPARATION_MODES, SeparationMode
 from splitter.separator import SeparationOptions, separate_file, validate_input_path
 
 
@@ -58,10 +59,20 @@ class DesktopApi:
             return None
         return str(result[0])
 
-    def start_separation(self, input_path: str) -> dict[str, Any]:
+    def get_available_stems(self) -> list[str]:
+        return list(FOUR_STEM_OUTPUTS)
+
+    def start_separation(
+        self,
+        input_path: str,
+        mode: str = "full",
+        selected_stems: list[str] | None = None,
+    ) -> dict[str, Any]:
         path = Path(input_path)
         try:
             validate_input_path(path)
+            separation_mode = self._validate_separation_mode(mode)
+            stems = self._validate_selected_stems(separation_mode, selected_stems)
         except (FileNotFoundError, ValueError, RuntimeError) as exc:
             return {"ok": False, "error": str(exc)}
 
@@ -78,7 +89,7 @@ class DesktopApi:
 
         self._thread = threading.Thread(
             target=self._run_separation,
-            args=(job_id, path),
+            args=(job_id, path, separation_mode, stems),
             daemon=True,
         )
         self._thread.start()
@@ -153,7 +164,36 @@ class DesktopApi:
             subprocess.run(["xdg-open", str(path)], check=False)
         return {"ok": True}
 
-    def _run_separation(self, job_id: str, input_path: Path) -> None:
+    def _validate_separation_mode(self, mode: str) -> SeparationMode:
+        if mode not in SUPPORTED_SEPARATION_MODES:
+            supported = ", ".join(SUPPORTED_SEPARATION_MODES)
+            raise ValueError(f"Invalid separation mode '{mode}'. Choose one of: {supported}")
+        return mode  # type: ignore[return-value]
+
+    def _validate_selected_stems(
+        self,
+        mode: SeparationMode,
+        selected_stems: list[str] | None,
+    ) -> tuple[str, ...] | None:
+        if mode != "custom":
+            return None
+        if not selected_stems:
+            raise ValueError("Custom mode requires at least one stem to be selected.")
+        invalid = [stem for stem in selected_stems if stem not in FOUR_STEM_OUTPUTS]
+        if invalid:
+            supported = ", ".join(FOUR_STEM_OUTPUTS)
+            raise ValueError(
+                f"Invalid stem(s): {', '.join(invalid)}. Choose from: {supported}"
+            )
+        return tuple(selected_stems)
+
+    def _run_separation(
+        self,
+        job_id: str,
+        input_path: Path,
+        mode: SeparationMode,
+        selected_stems: tuple[str, ...] | None,
+    ) -> None:
         self._set_job(
             job_id,
             status="running",
@@ -164,7 +204,11 @@ class DesktopApi:
             result = separate_file(
                 input_path,
                 self.output_root,
-                options=SeparationOptions(progress=False),
+                options=SeparationOptions(
+                    mode=mode,
+                    selected_stems=selected_stems,
+                    progress=False,
+                ),
             )
             self._set_job(
                 job_id,
