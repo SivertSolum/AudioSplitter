@@ -10,7 +10,8 @@ def _configure_frozen_desktop() -> None:
     if not getattr(sys, "frozen", False) or os.name != "nt":
         return
 
-    os.environ.setdefault("PYTHONNET_RUNTIME", "coreclr")
+    # pywebview loads System.Windows.Forms via .NET Framework; coreclr cannot resolve it.
+    os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
 
     root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
     candidates = [Path(sys.executable)]

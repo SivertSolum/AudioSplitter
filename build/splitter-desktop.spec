@@ -16,7 +16,7 @@ hiddenimports = [
     "webview.platforms.edgechromium",
     "clr_loader",
     "clr_loader.ffi",
-    "clr_loader.hostfxr",
+    "clr_loader.netfx",
     "pythonnet",
     "splitter.desktop.api",
     "splitter.separator",

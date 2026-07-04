@@ -25,6 +25,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- Windows EXE startup no longer fails with `Python.Runtime.Loader.Initialize` or missing `System.Windows.Forms` when launched from a downloaded release (pythonnet/clr_loader bundling, .NET Framework runtime, Mark-of-the-Web unblock)
+
 ### Removed
 
 ## [0.1.4] - 2026-07-04
