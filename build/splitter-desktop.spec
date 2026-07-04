@@ -31,6 +31,12 @@ TORCH_EXCLUDES = [
     "torch.quantization",
     "torch.ao.quantization",
     "torch.utils.tensorboard",
+    "torch._dynamo",
+    "torch._inductor",
+    "torch._functorch",
+    "torch.profiler",
+    "torch.compiler",
+    "torch.package",
     "tensorboard",
     "torchvision",
     "torchtext",
@@ -39,6 +45,15 @@ TORCH_EXCLUDES = [
     "torchaudio.datasets",
     "torchaudio.pipelines",
     "torchaudio.prototype",
+    "demucs.train",
+    "demucs.evaluate",
+    "demucs.solver",
+    "demucs.augment",
+    "demucs.distrib",
+    "demucs.repitch",
+    "demucs.wdemucs",
+    "demucs.separate",
+    "demucs.__main__",
     "matplotlib",
     "scipy",
     "pandas",
@@ -69,7 +84,6 @@ hiddenimports = [
     "demucs.audio",
     "demucs.apply",
     "demucs.htdemucs",
-    "demucs.audio_legacy",
     "torch",
     "torch.cuda",
     "torch.nn",
@@ -79,7 +93,7 @@ hiddenimports = [
     "torchaudio.io",
 ]
 
-for package in ("webview", "pythonnet", "clr_loader", "demucs"):
+for package in ("webview", "pythonnet", "clr_loader"):
     pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
     datas += pkg_datas
     binaries += pkg_binaries

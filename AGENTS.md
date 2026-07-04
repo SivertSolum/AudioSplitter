@@ -56,8 +56,8 @@ audio-splitter/
 **Install** (PyTorch first; Demucs fork is installed with `--no-deps` to avoid its outdated `torchaudio` pin):
 
 ```powershell
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124   # GPU builds (matches release)
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # CPU-only local builds
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124   # GPU local builds
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # CPU (matches CI release)
 pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[dev]" --no-deps && pip install typer rich pytest           # CLI + tests
@@ -97,7 +97,7 @@ pyinstaller --noconfirm build/splitter-desktop.spec
 # Output: dist/AudioSplitter/AudioSplitter.exe
 ```
 
-CI release builds use the same CUDA wheel index (`cu124`). Use CPU wheels only when testing a smaller local package.
+CI release builds use CPU PyTorch (`/whl/cpu`) so the zip stays under GitHub's 2 GB limit. Use CUDA wheels locally for a GPU-enabled build.
 
 **Running checks after changes:**
 

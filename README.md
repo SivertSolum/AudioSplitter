@@ -186,15 +186,15 @@ Add notes under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) before pushing to
 auto-increments the patch version (`0.1.1` → `0.1.2`), creates the changelog section, and
 publishes release tag `v0.1.2`.
 
-The release bundle includes `ffmpeg.exe` for MP3/FLAC/M4A support and **CUDA-enabled PyTorch** (cu124) for NVIDIA GPU acceleration. Demucs uses your GPU automatically when drivers are installed; otherwise it falls back to CPU. Model weights still download on first run (~1.3 GB).
+The release bundle includes `ffmpeg.exe` for MP3/FLAC/M4A support and **CPU-only PyTorch** so the zip fits GitHub's 2 GB upload limit. Separation runs on CPU; for GPU acceleration, build locally with CUDA wheels (below). Model weights still download on first run (~1.3 GB).
 
-The CUDA runtime makes the zip larger than a CPU-only build. An NVIDIA GPU with up-to-date drivers is recommended for fast separation.
+An NVIDIA GPU with CUDA wheels gives much faster separation (~1–2 min vs ~5–15 min on CPU for a typical track).
 
 **Windows startup errors (`Python.Runtime.Loader.Initialize` or `System.Windows.Forms`)** — If the app fails immediately after downloading from GitHub, Windows may have marked the zip as untrusted. Right-click the zip → **Properties** → check **Unblock** → **OK**, then extract again. Newer releases also clear this automatically on first launch. The desktop UI also requires **.NET Framework 4.7.2+** (included on Windows 10/11 by default).
 
 ### Build the executable locally
 
-Match the release workflow with CUDA PyTorch (recommended if you have an NVIDIA GPU):
+GitHub releases match the **CPU** build (same as CI). For GPU support, use the CUDA wheel index:
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
@@ -205,7 +205,7 @@ pip install typer rich
 pyinstaller --noconfirm build/splitter-desktop.spec
 ```
 
-For a smaller local build without GPU support:
+CPU-only build (matches the published release zip):
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu

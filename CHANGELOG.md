@@ -14,7 +14,7 @@ to `main` with notes under `[Unreleased]` auto-increments the patch version
 1. Add release notes under `## [Unreleased]` while you work.
 2. Push to `main`. GitHub Actions increments the patch version, promotes `[Unreleased]`
    into `## [version] - YYYY-MM-DD`, resets `[Unreleased]`, and publishes the release.
-3. Download artifacts named `AudioSplitter-{version}-Windows-x64.zip`.
+3. Download `AudioSplitter-{version}-Windows-x64.zip`.
 
 You do **not** need to bump `pyproject.toml` or create version headings manually.
 
@@ -23,7 +23,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Changed
 
-- PyInstaller desktop bundle: replace `collect_all` for torch/torchaudio with minimal custom hooks and exclude unused PyTorch subpackages (testing, distributed, ONNX, etc.) so release zips stay under GitHub's 2 GB asset limit
+- Release CI bundles CPU-only PyTorch so the desktop zip stays under GitHub's 2 GB asset limit (GPU builds exceed it); install CUDA wheels locally for a faster GPU build
+- PyInstaller bundle: minimal demucs hook (inference modules only), exclude torch compile/profiler stacks and demucs training CLI modules
 
 ### Fixed
 
