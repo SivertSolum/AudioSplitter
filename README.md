@@ -155,16 +155,14 @@ splitter-desktop
 Every push to `main` creates a tagged GitHub Release with a Windows build:
 
 1. Open the repository **Releases** page on GitHub
-2. Download `AudioSplitter-Windows-x64.zip`
+2. Download `AudioSplitter-{version}-Windows-x64.zip` (for example `AudioSplitter-0.1.2-Windows-x64.zip`)
 3. Extract the folder and run `AudioSplitter.exe`
 
-Release tags look like `v0.1.0-build.42`. To start a new release series, bump `version` in
-`pyproject.toml` and add notes under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). CI
-creates the version section and date automatically on the next push to `main`.
+Add notes under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) before pushing to `main`. CI
+auto-increments the patch version (`0.1.1` → `0.1.2`), creates the changelog section, and
+publishes release tag `v0.1.2`.
 
 The release bundle includes `ffmpeg.exe` for MP3/FLAC/M4A support. Demucs model weights still download on first run (~1.3 GB).
-
-Release tags follow the pattern `v{version}-build.{number}` (for example `v0.1.0-build.42`).
 
 ### Build the executable locally
 

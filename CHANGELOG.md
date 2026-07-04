@@ -5,19 +5,18 @@ All notable changes to **Audio Splitter** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Release tags on GitHub use the pattern `v{version}-build.{number}` (for example
-`v0.1.0-build.42`). The `{version}` segment matches `project.version` in
-`pyproject.toml`.
+Release tags on GitHub use the pattern `v{version}` (for example `v0.1.2`). Each push
+to `main` with notes under `[Unreleased]` auto-increments the patch version
+(`0.1.1` → `0.1.2`) and publishes a new release.
 
 **Workflow:**
 
 1. Add release notes under `## [Unreleased]` while you work.
-2. Bump `version` in `pyproject.toml` when you are ready for a new release series.
-3. Push to `main`. GitHub Actions promotes `[Unreleased]` into `## [version] - YYYY-MM-DD`
-   automatically (if that version section does not exist yet), then publishes the matching
-   section as the GitHub Release description.
+2. Push to `main`. GitHub Actions increments the patch version, promotes `[Unreleased]`
+   into `## [version] - YYYY-MM-DD`, resets `[Unreleased]`, and publishes the release.
+3. Download artifacts named `AudioSplitter-{version}-Windows-x64.zip`.
 
-You do **not** need to create the version heading or date manually.
+You do **not** need to bump `pyproject.toml` or create version headings manually.
 
 ## [Unreleased]
 
@@ -28,6 +27,8 @@ You do **not** need to create the version heading or date manually.
 - CLI flags `--mode` and `--stems` for choosing separation mode
 
 ### Changed
+
+- GitHub Releases now use patch-version tags (`v0.1.2`) instead of build-number suffixes; each release auto-increments the patch version and names the zip `AudioSplitter-{version}-Windows-x64.zip`
 
 ### Fixed
 

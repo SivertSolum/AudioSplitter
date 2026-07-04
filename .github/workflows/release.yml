@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build-windows:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: windows-latest
 
     steps:
@@ -26,27 +27,28 @@ jobs:
       - name: Install project (changelog sync)
         run: pip install -e .
 
-      - name: Promote changelog for current version
-        id: changelog
+      - name: Prepare release version and changelog
+        id: release
         shell: pwsh
         run: |
-          python scripts/sync_changelog.py --promote
-          $changelogChanged = git status --porcelain CHANGELOG.md
-          if ($changelogChanged) {
+          $version = python scripts/sync_changelog.py --prepare-release
+          "version=$version" >> $env:GITHUB_OUTPUT
+          $changed = git status --porcelain CHANGELOG.md pyproject.toml src/splitter/__init__.py
+          if ($changed) {
             "changed=true" >> $env:GITHUB_OUTPUT
           } else {
             "changed=false" >> $env:GITHUB_OUTPUT
           }
 
-      - name: Commit promoted changelog
-        if: steps.changelog.outputs.changed == 'true'
+      - name: Commit release version files
+        if: steps.release.outputs.changed == 'true'
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
-          git add CHANGELOG.md
-          git commit -m "chore: promote CHANGELOG for v$version [skip ci]"
+          $version = "${{ steps.release.outputs.version }}"
+          git add CHANGELOG.md pyproject.toml src/splitter/__init__.py
+          git commit -m "chore: release v$version [skip ci]"
           git push
 
       - name: Install PyTorch (CPU)
@@ -73,16 +75,8 @@ jobs:
       - name: Create release archive
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/AudioSplitter/*" -DestinationPath "AudioSplitter-Windows-x64.zip" -Force
-
-      - name: Resolve version tag
-        id: version
-        shell: pwsh
-        run: |
-          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
-          $tag = "v${version}-build.${{ github.run_number }}"
-          "tag=$tag" >> $env:GITHUB_OUTPUT
-          "version=$version" >> $env:GITHUB_OUTPUT
+          $version = "${{ steps.release.outputs.version }}"
+          Compress-Archive -Path "dist/AudioSplitter/*" -DestinationPath "AudioSplitter-$version-Windows-x64.zip" -Force
 
       - name: Extract release notes from CHANGELOG
         run: python scripts/sync_changelog.py --extract release-notes.md
@@ -90,8 +84,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Audio Splitter ${{ steps.version.outputs.version }} (build ${{ github.run_number }})
+          tag_name: v${{ steps.release.outputs.version }}
+          name: Audio Splitter ${{ steps.release.outputs.version }}
           body_path: release-notes.md
-          files: AudioSplitter-Windows-x64.zip
+          files: AudioSplitter-${{ steps.release.outputs.version }}-Windows-x64.zip
           make_latest: true

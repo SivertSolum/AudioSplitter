@@ -19,7 +19,7 @@ You are an expert Python developer working on **Audio Splitter**, a local tool t
 - **Tech stack:** Python 3.11+, Demucs, PyTorch, Typer, Rich, pywebview (desktop), PyInstaller (packaging)
 - **Entry points:** `splitter` (CLI), `splitter-desktop` (GUI)
 - **Default model:** `htdemucs_ft` (four stems)
-- **Release tags:** `v{version}-build.{number}` where `{version}` comes from `pyproject.toml`
+- **Release tags:** `v{version}` (for example `v0.1.2`); CI auto-increments the patch version on each release
 
 **File structure:**
 
@@ -91,7 +91,7 @@ pyinstaller --noconfirm build/splitter-desktop.spec
 
 - Run `pytest -m "not slow"` after Python changes.
 - Run PyInstaller locally only when touching packaging, desktop entry point, or bundled assets.
-- Bump `version` in `pyproject.toml` when preparing a user-visible release (not required for every CI build tag).
+- CI bumps `version` in `pyproject.toml` automatically on each release; only bump manually for a new major/minor series.
 
 ## Standards
 
@@ -148,30 +148,27 @@ When you make user-visible changes:
 1. Add entries under `## [Unreleased]` only — in `Added`, `Changed`, `Fixed`, or `Removed`.
 2. Use concise, user-facing bullet points (not commit hashes).
 3. Do **not** create `## [x.y.z]` sections manually; CI writes them for you.
+4. Do **not** bump `version` in `pyproject.toml` for routine releases; CI increments the patch version automatically.
 
-**When you are ready for a new release version:**
+**Release workflow:**
 
-1. Bump `version` in `pyproject.toml` (for example `0.1.0` → `0.2.0`).
-2. Ensure `[Unreleased]` contains the notes for that release.
-3. Push to `main`.
+1. Ensure `[Unreleased]` contains the notes for the upcoming release.
+2. Push to `main`.
 
 **What CI does automatically:**
 
-1. Reads `project.version` from `pyproject.toml`.
-2. If `## [version]` is missing, runs `scripts/sync_changelog.py --promote` to:
+1. Computes the next patch version from the latest `## [x.y.z]` section in `CHANGELOG.md`.
+2. Runs `scripts/sync_changelog.py --prepare-release` to:
    - Create `## [version] - YYYY-MM-DD` from `[Unreleased]`
    - Reset `[Unreleased]` to empty subsections
-   - Commit `CHANGELOG.md` with `[skip ci]` so the release job does not loop
+   - Update `pyproject.toml` and `src/splitter/__init__.py`
+   - Commit version files with `[skip ci]` so the release job does not loop
 3. Extracts the `## [version]` section into the GitHub Release body.
-4. Builds and uploads `AudioSplitter-Windows-x64.zip` tagged as `v{version}-build.{run_number}`.
-
-**Build-only releases** (same `pyproject.toml` version, new `-build.N` tag) reuse the existing
-`## [version]` section for release notes. Keep accumulating the *next* release under
-`[Unreleased]` without bumping the version until you are ready.
+4. Builds and uploads `AudioSplitter-{version}-Windows-x64.zip` tagged as `v{version}`.
 
 **Local helper:**
 
 ```powershell
-python scripts/sync_changelog.py --promote
+python scripts/sync_changelog.py --prepare-release
 python scripts/sync_changelog.py --extract release-notes.md
 ```

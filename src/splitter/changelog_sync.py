@@ -9,9 +9,11 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CHANGELOG_PATH = PROJECT_ROOT / "CHANGELOG.md"
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
+INIT_PATH = PROJECT_ROOT / "src" / "splitter" / "__init__.py"
 
 UNRELEASED_HEADING = "## [Unreleased]"
 SECTION_HEADING = re.compile(r"^## \[([^\]]+)\]")
+VERSION_HEADING = re.compile(r"^## \[(\d+\.\d+\.\d+)\]")
 EMPTY_UNRELEASED_BODY = """### Added
 
 ### Changed
@@ -26,6 +28,59 @@ EMPTY_UNRELEASED_BODY = """### Added
 def read_version() -> str:
     data = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
     return str(data["project"]["version"])
+
+
+def version_key(version: str) -> tuple[int, int, int]:
+    major, minor, patch = version.split(".")
+    return int(major), int(minor), int(patch)
+
+
+def bump_patch(version: str) -> str:
+    major, minor, patch = version_key(version)
+    return f"{major}.{minor}.{patch + 1}"
+
+
+def latest_released_version(ordered_sections: list[tuple[str, str]]) -> str | None:
+    versions: list[str] = []
+    for heading, _ in ordered_sections:
+        match = VERSION_HEADING.match(heading)
+        if match:
+            versions.append(match.group(1))
+    if not versions:
+        return None
+    return max(versions, key=version_key)
+
+
+def next_release_version(text: str) -> str:
+    _, ordered = parse_ordered_sections(text)
+    latest = latest_released_version(ordered)
+    if latest is None:
+        return read_version()
+    return bump_patch(latest)
+
+
+def write_version(version: str) -> None:
+    pyproject_text = PYPROJECT_PATH.read_text(encoding="utf-8")
+    updated_pyproject, count = re.subn(
+        r'(?m)^version = "[^"]+"',
+        f'version = "{version}"',
+        pyproject_text,
+        count=1,
+    )
+    if count != 1:
+        raise SystemExit("Could not update version in pyproject.toml")
+    PYPROJECT_PATH.write_text(updated_pyproject, encoding="utf-8")
+
+    init_text = INIT_PATH.read_text(encoding="utf-8")
+    updated_init, count = re.subn(
+        r'(?m)^__version__ = "[^"]+"',
+        f'__version__ = "{version}"',
+        init_text,
+        count=1,
+    )
+    if count != 1:
+        raise SystemExit("Could not update __version__ in __init__.py")
+    INIT_PATH.write_text(updated_init, encoding="utf-8")
 
 
 def parse_ordered_sections(text: str) -> tuple[str, list[tuple[str, str]]]:
@@ -98,7 +153,7 @@ def promote_unreleased(text: str, version: str, release_date: date | None = None
     if not section_has_entries(unreleased_body):
         raise SystemExit(
             f"No changelog section exists for [{version}] and [Unreleased] has no bullet entries. "
-            "Add release notes under [Unreleased] before bumping the version in pyproject.toml."
+            "Add release notes under [Unreleased] before pushing to main."
         )
 
     promoted_heading = f"## [{version}] - {release_date.isoformat()}"
@@ -114,6 +169,25 @@ def promote_unreleased(text: str, version: str, release_date: date | None = None
     return render_changelog(preamble, rebuilt), True
 
 
+def prepare_release(release_date: date | None = None) -> str:
+    changelog_text = CHANGELOG_PATH.read_text(encoding="utf-8")
+    release_version = next_release_version(changelog_text)
+    updated, promoted = promote_unreleased(
+        changelog_text,
+        release_version,
+        release_date=release_date,
+    )
+    if not promoted:
+        raise SystemExit(
+            f"Could not prepare release [{release_version}]. "
+            "Ensure [Unreleased] has bullet entries."
+        )
+
+    CHANGELOG_PATH.write_text(updated, encoding="utf-8")
+    write_version(release_version)
+    return release_version
+
+
 def sync_changelog(
     *,
     promote: bool = False,
@@ -126,11 +200,14 @@ def sync_changelog(
     changed = False
 
     if promote:
-        updated, promoted = promote_unreleased(changelog_text, resolved_version)
+        release_version = next_release_version(changelog_text)
+        updated, promoted = promote_unreleased(changelog_text, release_version)
         if promoted:
             CHANGELOG_PATH.write_text(updated, encoding="utf-8")
+            write_version(release_version)
             changed = True
             changelog_text = updated
+            resolved_version = release_version
 
     if extract_path is not None:
         notes = extract_version_notes(changelog_text, resolved_version)
@@ -146,9 +223,14 @@ def sync_changelog(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Promote and extract Keep a Changelog sections for CI.")
     parser.add_argument(
+        "--prepare-release",
+        action="store_true",
+        help="Bump patch version, promote [Unreleased], and update version files.",
+    )
+    parser.add_argument(
         "--promote",
         action="store_true",
-        help="Create ## [version] from [Unreleased] when the version section is missing.",
+        help="Alias for --prepare-release.",
     )
     parser.add_argument(
         "--extract",
@@ -158,21 +240,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--version", help="Override version read from pyproject.toml.")
     args = parser.parse_args(argv)
 
-    if not args.promote and not args.extract:
-        parser.error("Specify --promote and/or --extract.")
+    if not args.promote and not args.prepare_release and not args.extract:
+        parser.error("Specify --prepare-release/--promote and/or --extract.")
+
+    if args.prepare_release or args.promote:
+        version = prepare_release()
+        print(version)
+        return 0
 
     changed = sync_changelog(
-        promote=args.promote,
+        promote=False,
         extract_path=Path(args.extract) if args.extract else None,
         version=args.version,
     )
 
-    if args.promote and not changed:
-        version = args.version or read_version()
-        print(f"Changelog section ## [{version}] already exists; no promotion needed.")
-    elif args.promote:
-        version = args.version or read_version()
-        print(f"Promoted [Unreleased] to ## [{version}] in CHANGELOG.md")
+    if args.extract and not changed:
+        return 0
 
     return 0
 
