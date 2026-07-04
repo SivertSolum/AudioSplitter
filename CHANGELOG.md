@@ -25,6 +25,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- PyInstaller desktop bundle: stop excluding `torch.testing` and `torch.onnx`, and include `torch.testing` and `torch.autograd.gradcheck` as hidden imports required during `torch.nn` initialization
+
 ### Removed
 
 ## [0.1.10] - 2026-07-04
@@ -34,7 +36,7 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
-- Packaged desktop app startup: stop excluding torch subpackages (`torch.distributed`, `torch.package`, `torch.testing`, jit internals, etc.) that PyTorch imports during `torch.nn` initialization
+- Packaged desktop app startup: stop excluding core torch modules (`torch.package`, `torch.distributed.rpc`, jit internals) that PyTorch imports during `torch.nn` initialization
 
 ### Removed
 
