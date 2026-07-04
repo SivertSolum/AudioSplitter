@@ -1,3 +1,3 @@
 """Local stem separation CLI powered by Demucs."""
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
