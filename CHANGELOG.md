@@ -25,6 +25,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+### Removed
+
+## [0.1.11] - 2026-07-04
+### Added
+
+### Changed
+
+### Fixed
+
 - PyInstaller desktop bundle: stop excluding `torch.testing` and `torch.onnx`, and include `torch.testing` and `torch.autograd.gradcheck` as hidden imports required during `torch.nn` initialization
 
 ### Removed
