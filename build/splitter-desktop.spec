@@ -6,8 +6,46 @@ from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
 project_root = Path(SPECPATH).resolve().parent
+hooks_dir = project_root / "build" / "hooks"
 ui_src = project_root / "src" / "splitter" / "desktop" / "ui"
 icon_src = ui_src / "audiosplitter-icon.ico"
+
+# Trim torch bloat: custom hooks in build/hooks/ replace contrib collect_submodules("torch").
+# torch/torchaudio are not passed to collect_all().
+TORCH_EXCLUDES = [
+    "torch.testing",
+    "torch.testing._internal",
+    "torch.distributed",
+    "torch.distributed.elastic",
+    "torch.distributed.algorithms",
+    "torch.distributed.checkpoint",
+    "torch.distributed.fsdp",
+    "torch.distributed.optim",
+    "torch.distributed.rpc",
+    "torch.distributed.tensor",
+    "torch.onnx",
+    "torch._export",
+    "torch.export",
+    "torch.fx",
+    "torch.jit",
+    "torch.quantization",
+    "torch.ao.quantization",
+    "torch.utils.tensorboard",
+    "tensorboard",
+    "torchvision",
+    "torchtext",
+    "torchdata",
+    "torchaudio.models",
+    "torchaudio.datasets",
+    "torchaudio.pipelines",
+    "torchaudio.prototype",
+    "matplotlib",
+    "scipy",
+    "pandas",
+    "IPython",
+    "notebook",
+    "numba",
+]
 
 datas = [(str(ui_src), "splitter/desktop/ui")]
 binaries = []
@@ -33,14 +71,21 @@ hiddenimports = [
     "demucs.htdemucs",
     "demucs.audio_legacy",
     "torch",
+    "torch.cuda",
+    "torch.nn",
+    "torch.nn.functional",
     "torchaudio",
+    "torchaudio.backend.soundfile_backend",
+    "torchaudio.io",
 ]
 
-for package in ("webview", "pythonnet", "clr_loader", "torch", "torchaudio", "demucs"):
+for package in ("webview", "pythonnet", "clr_loader", "demucs"):
     pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
     datas += pkg_datas
     binaries += pkg_binaries
     hiddenimports += pkg_hidden
+
+hiddenimports = list(dict.fromkeys(hiddenimports))
 
 a = Analysis(
     [str(project_root / "src" / "splitter" / "desktop" / "app.py")],
@@ -48,10 +93,10 @@ a = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    hookspath=[],
+    hookspath=[str(hooks_dir)],
     hooksconfig={},
     runtime_hooks=[str(project_root / "build" / "pywebview_runtime_hook.py")],
-    excludes=[],
+    excludes=TORCH_EXCLUDES,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
