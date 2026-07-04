@@ -19,6 +19,15 @@ to `main` with notes under `[Unreleased]` auto-increments the patch version
 You do **not** need to bump `pyproject.toml` or create version headings manually.
 
 ## [Unreleased]
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.1.1] - 2026-07-04
 
 ### Added
 
