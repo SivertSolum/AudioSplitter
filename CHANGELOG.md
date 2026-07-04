@@ -25,6 +25,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- Packaged desktop app startup: stop excluding torchaudio subpackages (`datasets`, `models`, `pipelines`, etc.) that `torchaudio.__init__` imports at load time
+
 ### Removed
 
 ## [0.1.11] - 2026-07-04

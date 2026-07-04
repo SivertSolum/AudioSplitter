@@ -1,4 +1,4 @@
-# Minimal torchaudio hook — collects only native libs and backends needed for ta.load().
+# Minimal torchaudio hook — include subpackages imported by torchaudio.__init__.
 
 from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules
 
@@ -12,7 +12,12 @@ hiddenimports = [
     "torchaudio.backend.common",
     "torchaudio.backend.soundfile_backend",
     "torchaudio.backend.sox_io_backend",
+    "torchaudio.compliance",
+    "torchaudio.datasets",
     "torchaudio.functional",
     "torchaudio.io",
+    "torchaudio.models",
+    "torchaudio.pipelines",
+    "torchaudio.transforms",
     "torchaudio.utils",
 ] + collect_submodules("torchaudio.lib")

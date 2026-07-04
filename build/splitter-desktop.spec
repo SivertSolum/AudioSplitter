@@ -10,17 +10,14 @@ hooks_dir = project_root / "build" / "hooks"
 ui_src = project_root / "src" / "splitter" / "desktop" / "ui"
 icon_src = ui_src / "audiosplitter-icon.ico"
 
-# Do not exclude torch.* subpackages — PyTorch imports many of them at nn startup
-# (distributed, package, testing, gradcheck, etc.). Optional third-party packages only.
+# Do not exclude torch.* or torchaudio.* subpackages — both libraries import many
+# submodules at package init (e.g. torchaudio.datasets). Optional third-party only.
 TORCH_EXCLUDES = [
     "torch.utils.tensorboard",
     "tensorboard",
     "torchvision",
     "torchtext",
     "torchdata",
-    "torchaudio.models",
-    "torchaudio.datasets",
-    "torchaudio.pipelines",
     "torchaudio.prototype",
     "demucs.train",
     "demucs.evaluate",
