@@ -35,6 +35,7 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 ### Fixed
 
 - Packaged desktop app now loads UI assets from the PyInstaller bundle path (`splitter/desktop/ui`) instead of a missing `ui/` folder
+- Windows EXE startup no longer fails with `Python.Runtime.Loader.Initialize` when launched from a downloaded release (pythonnet/clr_loader bundling, coreclr runtime, Mark-of-the-Web unblock)
 
 ### Removed
 

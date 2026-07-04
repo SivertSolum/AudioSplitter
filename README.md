@@ -183,6 +183,8 @@ The release bundle includes `ffmpeg.exe` for MP3/FLAC/M4A support and **CUDA-ena
 
 The CUDA runtime makes the zip larger than a CPU-only build. An NVIDIA GPU with up-to-date drivers is recommended for fast separation.
 
+**Windows startup error (`Python.Runtime.Loader.Initialize`)** — If the app fails immediately after downloading from GitHub, Windows may have marked the zip as untrusted. Right-click the zip → **Properties** → check **Unblock** → **OK**, then extract again. Newer releases also clear this automatically on first launch.
+
 ### Build the executable locally
 
 Match the release workflow with CUDA PyTorch (recommended if you have an NVIDIA GPU):

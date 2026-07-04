@@ -5,6 +5,32 @@ import sys
 from pathlib import Path
 
 
+def _configure_frozen_desktop() -> None:
+    """Prepare pythonnet/pywebview before the GUI imports clr on Windows."""
+    if not getattr(sys, "frozen", False) or os.name != "nt":
+        return
+
+    os.environ.setdefault("PYTHONNET_RUNTIME", "coreclr")
+
+    root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    candidates = [Path(sys.executable)]
+    for relative in ("pythonnet", "clr_loader", "webview/lib"):
+        path = root / relative
+        if path.is_file():
+            candidates.append(path)
+        elif path.is_dir():
+            candidates.extend(path.rglob("*"))
+
+    for path in candidates:
+        if not path.is_file():
+            continue
+        zone = f"{path}:Zone.Identifier"
+        try:
+            os.remove(zone)
+        except OSError:
+            pass
+
+
 def _resource_root() -> Path:
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
@@ -25,6 +51,8 @@ def _ui_directory() -> Path:
 
 
 def main() -> None:
+    _configure_frozen_desktop()
+
     import webview
 
     from splitter.desktop.api import DesktopApi

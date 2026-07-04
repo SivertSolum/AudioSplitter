@@ -12,6 +12,12 @@ datas = [(str(ui_src), "splitter/desktop/ui")]
 binaries = []
 hiddenimports = [
     "webview",
+    "webview.platforms.winforms",
+    "webview.platforms.edgechromium",
+    "clr_loader",
+    "clr_loader.ffi",
+    "clr_loader.hostfxr",
+    "pythonnet",
     "splitter.desktop.api",
     "splitter.separator",
     "splitter.models",
@@ -28,7 +34,7 @@ hiddenimports = [
     "torchaudio",
 ]
 
-for package in ("torch", "torchaudio", "demucs"):
+for package in ("webview", "pythonnet", "clr_loader", "torch", "torchaudio", "demucs"):
     pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
     datas += pkg_datas
     binaries += pkg_binaries
@@ -42,7 +48,7 @@ a = Analysis(
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(project_root / "build" / "pywebview_runtime_hook.py")],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
