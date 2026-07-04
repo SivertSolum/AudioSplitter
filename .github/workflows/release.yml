@@ -31,7 +31,8 @@ jobs:
         shell: pwsh
         run: |
           python scripts/sync_changelog.py --promote
-          if (git status --porcelain CHANGELOG.md | Out-String).Trim().Length -gt 0) {
+          $changelogChanged = git status --porcelain CHANGELOG.md
+          if ($changelogChanged) {
             "changed=true" >> $env:GITHUB_OUTPUT
           } else {
             "changed=false" >> $env:GITHUB_OUTPUT

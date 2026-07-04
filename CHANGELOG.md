@@ -27,6 +27,8 @@ You do **not** need to create the version heading or date manually.
 
 ### Fixed
 
+- GitHub Actions release workflow: fix PowerShell syntax when detecting promoted `CHANGELOG.md` changes
+
 ### Removed
 
 ## [0.1.0] - 2026-07-04
