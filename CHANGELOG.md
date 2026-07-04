@@ -23,7 +23,17 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Changed
 
+- Track maintained Demucs fork ([adefossez/demucs](https://github.com/adefossez/demucs) 4.1.0a3) instead of archived Meta PyPI release 4.0.1; local `load_track()` uses `demucs.audio` APIs removed from the fork CLI module
+- Stem save dialog defaults to WAV and only offers audio export formats; non-WAV exports use ffmpeg when available
+- Desktop file dialogs use pywebview `FileDialog` constants instead of deprecated `OPEN_DIALOG` / `SAVE_DIALOG`
+- Desktop branding: custom logo in the header (title centered, icon left) and as the app/window favicon
+- Desktop UI redesigned as a studio-console layout: warm charcoal surfaces, amber accent, two-column workflow (setup left, preview/results right), flat panels, segmented controls, and mixer-style stem color rails
+- Desktop audio source UI: Local file and YouTube are toggle tabs that share one input row—the field shows the selected file path or a YouTube URL, and the action button switches between **Select audio file** and **Load from YouTube** (the separate full-width file picker button was removed)
+- Release CI installs the Demucs fork with `--no-deps` (after PyTorch), bundles `yt-dlp` for YouTube support in desktop builds, and upgrades `actions/checkout` and `actions/setup-python` to v6 (Node.js 24)
+
 ### Fixed
+
+- Desktop app startup crash on Windows when loading the window icon (regenerated a valid multi-resolution `.ico`; `webview.start` now only passes `.ico`, not PNG)
 
 ### Removed
 

@@ -10,8 +10,21 @@ from pathlib import Path
 from typing import Any, Literal
 
 from splitter.models import FOUR_STEM_OUTPUTS, SUPPORTED_SEPARATION_MODES, SeparationMode
+from splitter.audio_io import export_audio_file
 from splitter.separator import SeparationOptions, separate_file, validate_input_path
 from splitter.temp_cache import release as release_temp_file
+
+STEM_SAVE_FILE_TYPES = (
+    "WAV Audio (*.wav)",
+    "FLAC Audio (*.flac)",
+    "MP3 Audio (*.mp3)",
+    "M4A Audio (*.m4a)",
+    "OGG Audio (*.ogg)",
+    "AAC Audio (*.aac)",
+    "WMA Audio (*.wma)",
+)
+
+ZIP_SAVE_FILE_TYPES = ("ZIP Archive (*.zip)",)
 
 SourceType = Literal["local", "youtube"]
 
@@ -63,7 +76,7 @@ class DesktopApi:
 
         window = webview.windows[0]
         result = window.create_file_dialog(
-            webview.OPEN_DIALOG,
+            webview.FileDialog.OPEN,
             allow_multiple=False,
             file_types=("Audio Files (*.mp3;*.wav;*.flac;*.m4a;*.ogg;*.aac;*.wma)",),
         )
@@ -199,8 +212,10 @@ class DesktopApi:
         if not stem_path.exists():
             return {"ok": False, "error": f"Stem '{stem_name}' was not found."}
         target = Path(destination)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(stem_path, target)
+        try:
+            export_audio_file(stem_path, target)
+        except (FileNotFoundError, ValueError, RuntimeError) as exc:
+            return {"ok": False, "error": str(exc)}
         return {"ok": True, "path": str(target)}
 
     def save_all_stems_zip(self, destination: str) -> dict[str, Any]:
@@ -220,17 +235,25 @@ class DesktopApi:
                     archive.write(stem_path, arcname=f"{stem}.wav")
         return {"ok": True, "path": str(target)}
 
-    def pick_save_file(self, suggested_name: str) -> str | None:
+    def pick_save_file(self, suggested_name: str, kind: str = "stem") -> str | None:
         import webview
+
+        if kind == "zip":
+            file_types = ZIP_SAVE_FILE_TYPES
+        elif kind == "stem":
+            file_types = STEM_SAVE_FILE_TYPES
+        else:
+            raise ValueError(f"Unsupported save dialog kind: {kind}")
 
         window = webview.windows[0]
         result = window.create_file_dialog(
-            webview.SAVE_DIALOG,
+            webview.FileDialog.SAVE,
             save_filename=suggested_name,
+            file_types=file_types,
         )
         if not result:
             return None
-        return str(result)
+        return str(result[0])
 
     def open_output_folder(self) -> dict[str, Any]:
         import os

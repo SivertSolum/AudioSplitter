@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from splitter.desktop.api import DesktopApi
+from splitter.desktop.api import STEM_SAVE_FILE_TYPES, DesktopApi
 from splitter.desktop.app import _ui_directory
 from splitter.separator import SeparationOptions
 
@@ -165,3 +165,54 @@ def test_desktop_api_download_youtube_sets_ready_state(tmp_path: Path) -> None:
 def test_desktop_api_get_input_uri_without_loaded_input(tmp_path: Path) -> None:
     api = DesktopApi(output_root=tmp_path / "stems")
     assert api.get_input_uri() is None
+
+
+def test_desktop_api_pick_save_stem_file_uses_audio_filters(tmp_path: Path) -> None:
+    api = DesktopApi(output_root=tmp_path / "stems")
+    mock_window = MagicMock()
+    mock_window.create_file_dialog.return_value = ("vocals.wav",)
+
+    with patch("webview.windows", [mock_window]):
+        import webview
+
+        path = api.pick_save_file("vocals.wav", "stem")
+
+    assert path == "vocals.wav"
+    mock_window.create_file_dialog.assert_called_once_with(
+        webview.FileDialog.SAVE,
+        save_filename="vocals.wav",
+        file_types=STEM_SAVE_FILE_TYPES,
+    )
+
+
+def test_desktop_api_save_stem_copy_exports_wav(tmp_path: Path) -> None:
+    output_dir = tmp_path / "stems" / "track"
+    output_dir.mkdir(parents=True)
+    stem_path = output_dir / "vocals.wav"
+    stem_path.write_bytes(b"RIFF")
+
+    api = DesktopApi(output_root=tmp_path / "stems")
+    api._job.status = "done"
+    api._job.output_dir = str(output_dir)
+    api._job.stems = ["vocals"]
+
+    destination = tmp_path / "export" / "vocals.wav"
+    result = api.save_stem_copy("vocals", str(destination))
+
+    assert result["ok"] is True
+    assert destination.read_bytes() == b"RIFF"
+
+
+def test_desktop_api_save_stem_copy_rejects_unsupported_format(tmp_path: Path) -> None:
+    output_dir = tmp_path / "stems" / "track"
+    output_dir.mkdir(parents=True)
+    (output_dir / "vocals.wav").write_bytes(b"RIFF")
+
+    api = DesktopApi(output_root=tmp_path / "stems")
+    api._job.status = "done"
+    api._job.output_dir = str(output_dir)
+
+    result = api.save_stem_copy("vocals", str(tmp_path / "vocals.txt"))
+
+    assert result["ok"] is False
+    assert "unsupported" in result["error"].lower()

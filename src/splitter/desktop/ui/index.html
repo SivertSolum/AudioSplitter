@@ -4,137 +4,147 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audio Splitter</title>
+    <link rel="icon" type="image/png" href="audiosplitter-icon.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="shell">
-      <header class="hero">
-        <p class="eyebrow">Demucs powered</p>
-        <h1>Audio Splitter</h1>
-        <p class="subtitle">
-          Split a mixed track into vocals, drums, bass, and other stems locally on your machine.
-        </p>
+      <header class="app-header">
+        <div class="app-header__brand">
+          <img
+            class="app-header__logo"
+            src="audiosplitter-icon.png"
+            alt=""
+            width="68"
+            height="68"
+          />
+          <div class="app-header__text">
+            <h1>Audio Splitter</h1>
+            <p class="app-tagline">Local stem separation · Demucs</p>
+          </div>
+        </div>
       </header>
 
-      <section class="card">
-        <h2 class="section-title">Split mode</h2>
-        <div class="mode-options" role="radiogroup" aria-label="Split mode">
-          <label class="mode-option">
-            <input type="radio" name="split-mode" value="full" checked />
-            <span>
-              <strong>Full</strong>
-              <span class="muted">Vocals, drums, bass, and other</span>
-            </span>
-          </label>
-          <label class="mode-option">
-            <input type="radio" name="split-mode" value="vocal_split" />
-            <span>
-              <strong>Vocal split</strong>
-              <span class="muted">Vocals and instrumental</span>
-            </span>
-          </label>
-          <label class="mode-option">
-            <input type="radio" name="split-mode" value="custom" />
-            <span>
-              <strong>Custom</strong>
-              <span class="muted">Choose which stems to export</span>
-            </span>
-          </label>
-        </div>
-        <div id="custom-stems" class="custom-stems" hidden>
-          <p class="muted">Select stems to export:</p>
-          <div class="stem-checkboxes">
-            <label class="stem-checkbox">
-              <input type="checkbox" name="custom-stem" value="vocals" checked />
-              Vocals
-            </label>
-            <label class="stem-checkbox">
-              <input type="checkbox" name="custom-stem" value="drums" checked />
-              Drums
-            </label>
-            <label class="stem-checkbox">
-              <input type="checkbox" name="custom-stem" value="bass" checked />
-              Bass
-            </label>
-            <label class="stem-checkbox">
-              <input type="checkbox" name="custom-stem" value="other" checked />
-              Other
-            </label>
+      <div class="workspace">
+        <div class="workspace-row workspace-row--top">
+          <section class="panel panel--mode">
+            <h2 class="panel__label">Split mode</h2>
+            <div class="segmented segmented--mode" role="radiogroup" aria-label="Split mode">
+              <label class="segmented__item is-active">
+                <input type="radio" name="split-mode" value="full" checked />
+                <span>Full</span>
+              </label>
+              <label class="segmented__item">
+                <input type="radio" name="split-mode" value="vocal_split" />
+                <span>Vocal split</span>
+              </label>
+              <label class="segmented__item">
+                <input type="radio" name="split-mode" value="custom" />
+                <span>Custom</span>
+              </label>
+            </div>
+            <div id="custom-stems" class="custom-stems" hidden>
+              <div class="stem-chips" role="group" aria-label="Stems to export">
+                <label class="stem-chip">
+                  <input type="checkbox" name="custom-stem" value="vocals" checked />
+                  Vocals
+                </label>
+                <label class="stem-chip">
+                  <input type="checkbox" name="custom-stem" value="drums" checked />
+                  Drums
+                </label>
+                <label class="stem-chip">
+                  <input type="checkbox" name="custom-stem" value="bass" checked />
+                  Bass
+                </label>
+                <label class="stem-chip">
+                  <input type="checkbox" name="custom-stem" value="other" checked />
+                  Other
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <div
+            class="status-bar panel panel--status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span id="status-dot" class="status-dot" aria-hidden="true"></span>
+            <div class="status-bar__content">
+              <h2 id="status-title" class="status-bar__title">Waiting for a source</h2>
+              <p id="status-message" class="status-bar__message muted">
+                Load a file or YouTube URL, preview, then split.
+              </p>
+              <p id="elapsed" class="elapsed mono" hidden></p>
+              <p id="error-message" class="error" hidden></p>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section class="card">
-        <h2 class="section-title">Audio source</h2>
-        <div class="source-tabs" role="tablist" aria-label="Audio source">
-          <button
-            id="source-tab-local"
-            type="button"
-            class="source-tab active"
-            role="tab"
-            aria-selected="true"
-            aria-controls="source-panel-local"
-          >
-            Local file
-          </button>
-          <button
-            id="source-tab-youtube"
-            type="button"
-            class="source-tab"
-            role="tab"
-            aria-selected="false"
-            aria-controls="source-panel-youtube"
-          >
-            YouTube
-          </button>
-        </div>
+        <section class="panel panel--source">
+          <h2 class="panel__label">Audio source</h2>
+          <div class="segmented" role="tablist" aria-label="Audio source">
+            <button
+              id="source-tab-local"
+              type="button"
+              class="segmented__item is-active"
+              role="tab"
+              aria-selected="true"
+              aria-controls="source-input"
+            >
+              Local file
+            </button>
+            <button
+              id="source-tab-youtube"
+              type="button"
+              class="segmented__item"
+              role="tab"
+              aria-selected="false"
+              aria-controls="source-input"
+            >
+              YouTube
+            </button>
+          </div>
 
-        <div id="source-panel-local" class="source-panel" role="tabpanel">
-          <button id="pick-file" type="button">Select audio file</button>
-        </div>
-
-        <div id="source-panel-youtube" class="source-panel" role="tabpanel" hidden>
-          <div class="youtube-input-row">
+          <div class="source-input-row">
             <input
-              id="youtube-url"
-              type="url"
-              placeholder="https://www.youtube.com/watch?v=..."
+              id="source-input"
+              type="text"
+              class="mono"
+              placeholder="No file selected"
               autocomplete="off"
+              readonly
             />
-            <button id="load-youtube" type="button">Load from YouTube</button>
+            <button id="source-action" type="button" class="btn">Select audio file</button>
           </div>
+        </section>
+
+        <div class="preview-block panel panel--preview">
+          <p id="preview-empty" class="preview-empty muted">
+            No source loaded — pick a file or paste a YouTube URL.
+          </p>
+          <audio id="original-preview" controls hidden></audio>
         </div>
 
-        <p id="selected-file" class="muted">No source loaded.</p>
-        <audio id="original-preview" controls hidden></audio>
-
-        <div class="actions split-actions">
-          <button id="split-track" type="button" disabled>Split</button>
-          <button id="open-folder" type="button" class="secondary" disabled>Open output folder</button>
+        <div class="setup-actions">
+          <button id="split-track" type="button" class="btn" disabled>Split</button>
+          <button id="open-folder" type="button" class="btn btn--secondary" disabled>
+            Open output folder
+          </button>
         </div>
-      </section>
 
-      <section class="card">
-        <div class="status-row">
-          <span id="status-dot" class="status-dot idle"></span>
-          <div>
-            <h2 id="status-title">Waiting for a source</h2>
-            <p id="status-message" class="muted">
-              Choose a split mode, load a local file or YouTube URL, preview the track, then split.
-            </p>
-            <p id="elapsed" class="elapsed" hidden></p>
-            <p id="error-message" class="error" hidden></p>
+        <section id="stem-section" class="stem-section" hidden>
+          <div class="stem-section__header">
+            <h2 class="panel__label">Stem previews</h2>
+            <button id="download-all" type="button" class="btn btn--secondary">
+              Download all stems (.zip)
+            </button>
           </div>
-        </div>
-      </section>
-
-      <section id="stem-section" class="card" hidden>
-        <div class="section-header">
-          <h2>Stem previews</h2>
-          <button id="download-all" type="button">Download all stems (.zip)</button>
-        </div>
-        <div id="stem-grid" class="stem-grid"></div>
-      </section>
+          <div id="stem-grid" class="stem-list"></div>
+        </section>
+      </div>
     </main>
 
     <script src="app.js"></script>

@@ -7,6 +7,7 @@ from PyInstaller.utils.hooks import collect_all
 block_cipher = None
 project_root = Path(SPECPATH).resolve().parent
 ui_src = project_root / "src" / "splitter" / "desktop" / "ui"
+icon_src = ui_src / "audiosplitter-icon.ico"
 
 datas = [(str(ui_src), "splitter/desktop/ui")]
 binaries = []
@@ -27,9 +28,10 @@ hiddenimports = [
     "yt_dlp",
     "demucs",
     "demucs.pretrained",
-    "demucs.separate",
+    "demucs.audio",
     "demucs.apply",
     "demucs.htdemucs",
+    "demucs.audio_legacy",
     "torch",
     "torchaudio",
 ]
@@ -74,6 +76,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=str(icon_src) if icon_src.exists() else None,
 )
 
 coll = COLLECT(

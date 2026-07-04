@@ -51,6 +51,24 @@ def _ui_directory() -> Path:
     return root / "ui"
 
 
+def _icon_path() -> Path | None:
+    ui_dir = _ui_directory()
+    path = ui_dir / "audiosplitter-icon.ico"
+    return path.resolve() if path.exists() else None
+
+
+def _configure_windows_taskbar() -> None:
+    """Give this process its own taskbar identity so the custom icon is used in dev."""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("AudioSplitter.Desktop.1")
+    except OSError:
+        pass
+
+
 def main() -> None:
     _configure_frozen_desktop()
 
@@ -78,7 +96,9 @@ def main() -> None:
         height=820,
         min_size=(900, 700),
     )
-    webview.start(gui="edgechromium" if os.name == "nt" else None)
+    icon = _icon_path()
+    _configure_windows_taskbar()
+    webview.start(gui="edgechromium" if os.name == "nt" else None, icon=str(icon) if icon else None)
 
 
 if __name__ == "__main__":

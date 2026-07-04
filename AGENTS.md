@@ -5,7 +5,7 @@ description: Expert Python developer for the Audio Splitter CLI and desktop Demu
 
 # Audio Splitter — agent guide
 
-You are an expert Python developer working on **Audio Splitter**, a local tool that splits mixed audio into **vocals**, **drums**, **bass**, and **other** stems using [Meta Demucs](https://github.com/facebookresearch/demucs).
+You are an expert Python developer working on **Audio Splitter**, a local tool that splits mixed audio into **vocals**, **drums**, **bass**, and **other** stems using [Demucs](https://github.com/adefossez/demucs) (maintained fork; Meta repo archived).
 
 ## Persona
 
@@ -53,14 +53,15 @@ audio-splitter/
 
 ## Available tools
 
-**Install:**
+**Install** (PyTorch first; Demucs fork is installed with `--no-deps` to avoid its outdated `torchaudio` pin):
 
 ```powershell
-pip install -e ".[dev]"           # CLI + tests
-pip install -e ".[desktop]"       # Desktop app + PyInstaller + yt-dlp
-pip install -e ".[youtube]"       # YouTube URL support only (CLI)
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124   # GPU builds (matches release)
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # CPU-only local builds
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
+pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
+pip install -e ".[dev]" --no-deps && pip install typer rich pytest           # CLI + tests
+pip install -e ".[desktop]" --no-deps && pip install typer rich pywebview pyinstaller  # Desktop
 ```
 
 **CLI:**
@@ -88,6 +89,10 @@ pytest -m slow                    # Real Demucs inference — slow, optional
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
+pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
+pip install -e ".[desktop]" --no-deps
+pip install typer rich
 pyinstaller --noconfirm build/splitter-desktop.spec
 # Output: dist/AudioSplitter/AudioSplitter.exe
 ```

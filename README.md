@@ -1,6 +1,6 @@
 # Splitter
 
-CLI and desktop app for splitting a mixed audio track into **vocals**, **drums**, **bass**, and **other** stems using [Meta Demucs](https://github.com/facebookresearch/demucs) (`htdemucs_ft` by default).
+CLI and desktop app for splitting a mixed audio track into **vocals**, **drums**, **bass**, and **other** stems using [Demucs](https://github.com/adefossez/demucs) (`htdemucs_ft` by default).
 
 Everything runs locally on your machine. No cloud hosting or uploads are required.
 
@@ -65,18 +65,25 @@ ffmpeg -version
 
 #### 2. Create a virtual environment
 
+Install **PyTorch before Demucs** — the maintained Demucs fork pins an older `torchaudio` range, so AudioSplitter installs it with `--no-deps` after PyTorch is in place.
+
 ```powershell
 cd path\to\audio-splitter
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -e ".[dev]"
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
+pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
+pip install -e ".[dev]" --no-deps
+pip install typer rich pytest
 ```
 
-#### 3. Optional — CUDA GPU acceleration
+For CPU-only PyTorch, use `--index-url https://download.pytorch.org/whl/cpu` instead of `cu124`.
+
+#### 3. Verify CUDA (optional)
 
 ```powershell
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 python -c "import torch; print(torch.cuda.is_available())"
 ```
 
@@ -191,7 +198,10 @@ Match the release workflow with CUDA PyTorch (recommended if you have an NVIDIA 
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install -e ".[desktop]"
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
+pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
+pip install -e ".[desktop]" --no-deps
+pip install typer rich
 pyinstaller --noconfirm build/splitter-desktop.spec
 ```
 
@@ -199,7 +209,10 @@ For a smaller local build without GPU support:
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-pip install -e ".[desktop]"
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
+pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
+pip install -e ".[desktop]" --no-deps
+pip install typer rich
 pyinstaller --noconfirm build/splitter-desktop.spec
 ```
 
@@ -254,4 +267,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
 ## License
 
-Splitter is application code around Demucs. Demucs is MIT-licensed; see the [Demucs repository](https://github.com/facebookresearch/demucs) for model terms and attribution.
+Splitter is application code around Demucs. Demucs is MIT-licensed; see the [Demucs repository](https://github.com/adefossez/demucs) for model terms and attribution. The original Meta repository is [archived](https://github.com/facebookresearch/demucs).

@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 import torch
+import torchaudio as ta
 from demucs.apply import BagOfModels, apply_model
+from demucs.audio import AudioFile, convert_audio
 from demucs.htdemucs import HTDemucs
 from demucs.pretrained import get_model
-from demucs.separate import load_track
 
 from splitter.audio_io import save_wav
 
@@ -44,6 +46,36 @@ class SeparationOptions:
     progress: bool = True
     shifts: int = 1
     overlap: float = 0.25
+
+
+def load_track(path: Path, audio_channels: int, samplerate: int) -> torch.Tensor:
+    """Load and resample audio for Demucs (replaces removed demucs.separate.load_track)."""
+    errors: dict[str, str] = {}
+    wav: torch.Tensor | None = None
+
+    try:
+        wav = AudioFile(path).read(streams=0, samplerate=samplerate, channels=audio_channels)
+    except FileNotFoundError:
+        errors["ffmpeg"] = "FFmpeg is not installed."
+    except subprocess.CalledProcessError:
+        errors["ffmpeg"] = "FFmpeg could not read the file."
+
+    if wav is None:
+        try:
+            loaded, sr = ta.load(str(path))
+        except RuntimeError as err:
+            errors["torchaudio"] = err.args[0]
+        else:
+            wav = convert_audio(loaded, sr, samplerate, audio_channels)
+
+    if wav is None:
+        detail = "\n".join(
+            f"When trying to load using {backend}, got the following error: {error}"
+            for backend, error in errors.items()
+        )
+        raise RuntimeError(detail)
+
+    return wav
 
 
 def ffmpeg_available() -> bool:
@@ -141,9 +173,10 @@ def _run_model(
     options: SeparationOptions,
 ) -> torch.Tensor:
     ref = wav.mean(0)
+    std = ref.std()
     normalized = wav.clone()
     normalized -= ref.mean()
-    normalized /= ref.std()
+    normalized /= std + 1e-8
 
     sources = apply_model(
         model,
@@ -155,7 +188,7 @@ def _run_model(
         progress=options.progress,
     )[0]
 
-    sources *= ref.std()
+    sources *= std + 1e-8
     sources += ref.mean()
     return sources
 

@@ -6,14 +6,13 @@ const STEM_LABELS = {
   no_vocals: "Instrumental",
 };
 
-const pickFileButton = document.getElementById("pick-file");
-const loadYoutubeButton = document.getElementById("load-youtube");
-const youtubeUrlInput = document.getElementById("youtube-url");
+const sourceInput = document.getElementById("source-input");
+const sourceActionButton = document.getElementById("source-action");
 const splitButton = document.getElementById("split-track");
 const openFolderButton = document.getElementById("open-folder");
 const downloadAllButton = document.getElementById("download-all");
-const selectedFileLabel = document.getElementById("selected-file");
 const originalPreview = document.getElementById("original-preview");
+const previewEmpty = document.getElementById("preview-empty");
 const statusDot = document.getElementById("status-dot");
 const statusTitle = document.getElementById("status-title");
 const statusMessage = document.getElementById("status-message");
@@ -23,17 +22,18 @@ const stemSection = document.getElementById("stem-section");
 const stemGrid = document.getElementById("stem-grid");
 const customStemsPanel = document.getElementById("custom-stems");
 const modeInputs = document.querySelectorAll('input[name="split-mode"]');
+const modeSegmentItems = document.querySelectorAll(".segmented--mode .segmented__item");
 const customStemInputs = document.querySelectorAll('input[name="custom-stem"]');
 const sourceTabLocal = document.getElementById("source-tab-local");
 const sourceTabYoutube = document.getElementById("source-tab-youtube");
-const sourcePanelLocal = document.getElementById("source-panel-local");
-const sourcePanelYoutube = document.getElementById("source-panel-youtube");
 
 let pollTimer = null;
 let elapsedTimer = null;
 let elapsedSeconds = 0;
 let currentInputPath = null;
 let currentDisplayName = null;
+let currentLocalPath = "";
+let currentYoutubeUrl = "";
 let activeSourceTab = "local";
 
 function api() {
@@ -55,8 +55,16 @@ function isBusy() {
   return ["downloading", "queued", "running"].includes(statusDot.dataset.status || "");
 }
 
+function updateModeSegmentUi() {
+  modeSegmentItems.forEach((item) => {
+    const radio = item.querySelector('input[type="radio"]');
+    item.classList.toggle("is-active", Boolean(radio?.checked));
+  });
+}
+
 function updateModeUi() {
   const mode = getSelectedMode();
+  updateModeSegmentUi();
   customStemsPanel.hidden = mode !== "custom";
   updateActionState();
 }
@@ -67,27 +75,39 @@ function updateActionState() {
   const busy = isBusy();
   const ready = statusDot.dataset.status === "ready" && currentInputPath;
 
-  pickFileButton.disabled = busy;
-  loadYoutubeButton.disabled = busy;
-  youtubeUrlInput.disabled = busy;
+  sourceActionButton.disabled = busy;
+  sourceInput.disabled = busy;
   sourceTabLocal.disabled = busy;
   sourceTabYoutube.disabled = busy;
   splitButton.disabled = busy || customInvalid || !ready;
   openFolderButton.disabled = statusDot.dataset.status !== "done";
 }
 
+function updateSourceInput() {
+  const isLocal = activeSourceTab === "local";
+  sourceInput.readOnly = isLocal;
+  sourceInput.type = isLocal ? "text" : "url";
+  sourceInput.placeholder = isLocal
+    ? "No file selected"
+    : "https://www.youtube.com/watch?v=...";
+  sourceInput.value = isLocal ? currentLocalPath : currentYoutubeUrl;
+  sourceActionButton.textContent = isLocal ? "Select audio file" : "Load from YouTube";
+}
+
 function setSourceTab(tab) {
-  if (busy()) {
+  if (isBusy()) {
     return;
+  }
+  if (activeSourceTab === "youtube") {
+    currentYoutubeUrl = sourceInput.value.trim();
   }
   activeSourceTab = tab;
   const isLocal = tab === "local";
-  sourceTabLocal.classList.toggle("active", isLocal);
-  sourceTabYoutube.classList.toggle("active", !isLocal);
+  sourceTabLocal.classList.toggle("is-active", isLocal);
+  sourceTabYoutube.classList.toggle("is-active", !isLocal);
   sourceTabLocal.setAttribute("aria-selected", String(isLocal));
   sourceTabYoutube.setAttribute("aria-selected", String(!isLocal));
-  sourcePanelLocal.hidden = !isLocal;
-  sourcePanelYoutube.hidden = isLocal;
+  updateSourceInput();
 }
 
 function setStatus(status, message, error) {
@@ -160,10 +180,20 @@ function resetStemSection() {
 function showLoadedSource(path, displayName, uri) {
   currentInputPath = path;
   currentDisplayName = displayName;
-  selectedFileLabel.textContent = displayName;
+  currentLocalPath = displayName;
+  if (activeSourceTab === "local") {
+    sourceInput.value = currentLocalPath;
+  }
   originalPreview.hidden = false;
   originalPreview.src = uri;
+  previewEmpty.hidden = true;
   resetStemSection();
+}
+
+function clearPreview() {
+  originalPreview.hidden = true;
+  originalPreview.removeAttribute("src");
+  previewEmpty.hidden = false;
 }
 
 async function pollStatus() {
@@ -212,6 +242,9 @@ async function renderStems(stems) {
     const uri = await api().get_stem_uri(stem);
     const card = document.createElement("article");
     card.className = "stem-card";
+    card.dataset.stem = stem;
+
+    const body = document.createElement("div");
 
     const title = document.createElement("h3");
     title.textContent = STEM_LABELS[stem] || stem;
@@ -225,9 +258,10 @@ async function renderStems(stems) {
 
     const downloadButton = document.createElement("button");
     downloadButton.type = "button";
+    downloadButton.className = "btn btn--secondary";
     downloadButton.textContent = `Save ${STEM_LABELS[stem] || stem}`;
     downloadButton.addEventListener("click", async () => {
-      const destination = await api().pick_save_file(`${stem}.wav`);
+      const destination = await api().pick_save_file(`${stem}.wav`, "stem");
       if (!destination) {
         return;
       }
@@ -237,9 +271,10 @@ async function renderStems(stems) {
       }
     });
 
-    card.appendChild(title);
-    card.appendChild(audio);
-    card.appendChild(downloadButton);
+    body.appendChild(title);
+    body.appendChild(audio);
+    body.appendChild(downloadButton);
+    card.appendChild(body);
     stemGrid.appendChild(card);
   }
 }
@@ -258,17 +293,17 @@ async function handlePickFile() {
 }
 
 async function handleLoadYoutube() {
-  const url = youtubeUrlInput.value.trim();
+  const url = sourceInput.value.trim();
   if (!url) {
     setStatus("error", "Enter a YouTube URL.", "YouTube URL cannot be empty.");
     return;
   }
 
+  currentYoutubeUrl = url;
   resetStemSection();
   currentInputPath = null;
   currentDisplayName = null;
-  originalPreview.hidden = true;
-  originalPreview.removeAttribute("src");
+  clearPreview();
   setStatus("downloading", "Downloading audio from YouTube…", null);
 
   const result = await api().download_youtube(url);
@@ -278,6 +313,14 @@ async function handleLoadYoutube() {
   }
 
   beginPolling();
+}
+
+async function handleSourceAction() {
+  if (activeSourceTab === "local") {
+    await handlePickFile();
+  } else {
+    await handleLoadYoutube();
+  }
 }
 
 async function handleSplit() {
@@ -315,7 +358,7 @@ async function handleDownloadAll() {
     : currentInputPath
       ? currentInputPath.split(/[\\/]/).pop().replace(/\.[^.]+$/, "")
       : "stems";
-  const destination = await api().pick_save_file(`${baseName}-stems.zip`);
+  const destination = await api().pick_save_file(`${baseName}-stems.zip`, "zip");
   if (!destination) {
     return;
   }
@@ -336,8 +379,7 @@ customStemInputs.forEach((input) => {
 sourceTabLocal.addEventListener("click", () => setSourceTab("local"));
 sourceTabYoutube.addEventListener("click", () => setSourceTab("youtube"));
 
-pickFileButton.addEventListener("click", handlePickFile);
-loadYoutubeButton.addEventListener("click", handleLoadYoutube);
+sourceActionButton.addEventListener("click", handleSourceAction);
 splitButton.addEventListener("click", handleSplit);
 openFolderButton.addEventListener("click", async () => {
   const result = await api().open_output_folder();
@@ -347,17 +389,14 @@ openFolderButton.addEventListener("click", async () => {
 });
 downloadAllButton.addEventListener("click", handleDownloadAll);
 
-youtubeUrlInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !loadYoutubeButton.disabled) {
+sourceInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !sourceActionButton.disabled && activeSourceTab === "youtube") {
     handleLoadYoutube();
   }
 });
 
 window.addEventListener("pywebviewready", () => {
+  updateSourceInput();
   updateModeUi();
-  setStatus(
-    "idle",
-    "Choose a split mode, load a local file or YouTube URL, preview the track, then split.",
-    null,
-  );
+  setStatus("idle", "Load a file or YouTube URL, preview, then split.", null);
 });

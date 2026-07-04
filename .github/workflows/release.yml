@@ -15,17 +15,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Install project (changelog sync)
-        run: pip install -e .
+        run: pip install -e . --no-deps
 
       - name: Prepare release version and changelog
         id: release
@@ -71,8 +71,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-      - name: Install desktop build tools
-        run: pip install -e ".[desktop]"
+      - name: Install Demucs fork and desktop build tools
+        run: |
+          pip install dora-search einops julius lameenc openunmix pyyaml tqdm typer rich pywebview pyinstaller yt-dlp
+          pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
+          pip install -e ".[desktop]" --no-deps
 
       - name: Build executable
         run: pyinstaller --noconfirm build/splitter-desktop.spec
