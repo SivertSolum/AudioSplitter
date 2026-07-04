@@ -31,32 +31,45 @@ jobs:
         id: release
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+
           $version = python scripts/sync_changelog.py --prepare-release
-          "version=$version" >> $env:GITHUB_OUTPUT
-          $changed = git status --porcelain CHANGELOG.md pyproject.toml src/splitter/__init__.py
-          if ($changed) {
-            "changed=true" >> $env:GITHUB_OUTPUT
-          } else {
-            "changed=false" >> $env:GITHUB_OUTPUT
+          if ($LASTEXITCODE -ne 0) {
+            throw "sync_changelog.py --prepare-release failed with exit code $LASTEXITCODE."
           }
+          $version = "$version".Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Invalid release version '$version'. Expected a semver like 0.1.2."
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8NoBOM
+
+          $changed = git status --porcelain CHANGELOG.md pyproject.toml src/splitter/__init__.py
+          if (-not $changed) {
+            throw "prepare-release did not modify version files."
+          }
+          "changed=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8NoBOM
 
       - name: Commit release version files
         id: version_commit
-        if: steps.release.outputs.changed == 'true'
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           $version = "${{ steps.release.outputs.version }}"
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release version output is missing or invalid: '$version'."
+          }
           git add CHANGELOG.md pyproject.toml src/splitter/__init__.py
           git commit -m "chore: release v$version [skip ci]"
           git push
-          "sha=$(git rev-parse HEAD)" >> $env:GITHUB_OUTPUT
+          "sha=$(git rev-parse HEAD)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8NoBOM
 
-      - name: Install PyTorch (CPU)
+      - name: Install PyTorch (CUDA)
         run: |
           python -m pip install --upgrade pip
-          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 
       - name: Install desktop build tools
         run: pip install -e ".[desktop]"
@@ -77,20 +90,31 @@ jobs:
       - name: Create release archive
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $version = "${{ steps.release.outputs.version }}"
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release version output is missing or invalid: '$version'."
+          }
           Compress-Archive -Path "dist/AudioSplitter/*" -DestinationPath "AudioSplitter-$version-Windows-x64.zip" -Force
 
       - name: Extract release notes from CHANGELOG
-        run: python scripts/sync_changelog.py --extract release-notes.md
+        run: python scripts/sync_changelog.py --extract release-notes.md --version ${{ steps.release.outputs.version }}
 
       - name: Publish GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          $ErrorActionPreference = 'Stop'
           $version = "${{ steps.release.outputs.version }}"
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release version output is missing or invalid: '$version'."
+          }
           $tag = "v$version"
           $zip = "AudioSplitter-$version-Windows-x64.zip"
+          if (-not (Test-Path $zip)) {
+            throw "Release archive not found: $zip"
+          }
           $target = "${{ steps.version_commit.outputs.sha }}"
           if (-not $target) {
             $target = git rev-parse HEAD

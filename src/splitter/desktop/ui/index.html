@@ -65,21 +65,62 @@
       </section>
 
       <section class="card">
-        <div class="actions">
+        <h2 class="section-title">Audio source</h2>
+        <div class="source-tabs" role="tablist" aria-label="Audio source">
+          <button
+            id="source-tab-local"
+            type="button"
+            class="source-tab active"
+            role="tab"
+            aria-selected="true"
+            aria-controls="source-panel-local"
+          >
+            Local file
+          </button>
+          <button
+            id="source-tab-youtube"
+            type="button"
+            class="source-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="source-panel-youtube"
+          >
+            YouTube
+          </button>
+        </div>
+
+        <div id="source-panel-local" class="source-panel" role="tabpanel">
           <button id="pick-file" type="button">Select audio file</button>
+        </div>
+
+        <div id="source-panel-youtube" class="source-panel" role="tabpanel" hidden>
+          <div class="youtube-input-row">
+            <input
+              id="youtube-url"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              autocomplete="off"
+            />
+            <button id="load-youtube" type="button">Load from YouTube</button>
+          </div>
+        </div>
+
+        <p id="selected-file" class="muted">No source loaded.</p>
+        <audio id="original-preview" controls hidden></audio>
+
+        <div class="actions split-actions">
+          <button id="split-track" type="button" disabled>Split</button>
           <button id="open-folder" type="button" class="secondary" disabled>Open output folder</button>
         </div>
-        <p id="selected-file" class="muted">No file selected.</p>
-        <audio id="original-preview" controls hidden></audio>
       </section>
 
       <section class="card">
         <div class="status-row">
           <span id="status-dot" class="status-dot idle"></span>
           <div>
-            <h2 id="status-title">Waiting for a file</h2>
+            <h2 id="status-title">Waiting for a source</h2>
             <p id="status-message" class="muted">
-              Choose a split mode, then select a track. Models download on first run.
+              Choose a split mode, load a local file or YouTube URL, preview the track, then split.
             </p>
             <p id="elapsed" class="elapsed" hidden></p>
             <p id="error-message" class="error" hidden></p>

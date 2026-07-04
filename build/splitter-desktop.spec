@@ -16,6 +16,9 @@ hiddenimports = [
     "splitter.separator",
     "splitter.models",
     "splitter.audio_io",
+    "splitter.sources.youtube",
+    "splitter.temp_cache",
+    "yt_dlp",
     "demucs",
     "demucs.pretrained",
     "demucs.separate",
@@ -25,7 +28,7 @@ hiddenimports = [
     "torchaudio",
 ]
 
-for package in ("torch", "demucs"):
+for package in ("torch", "torchaudio", "demucs"):
     pkg_datas, pkg_binaries, pkg_hidden = collect_all(package)
     datas += pkg_datas
     binaries += pkg_binaries

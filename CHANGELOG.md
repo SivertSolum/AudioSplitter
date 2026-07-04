@@ -21,9 +21,19 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 ## [Unreleased]
 ### Added
 
+- YouTube URL input in the desktop app: download audio to a temp cache, preview the full track, then split
+- CLI `splitter split --url` for downloading and separating a YouTube video in one command
+- Optional `--keep-download` flag to retain the temporary YouTube audio file after CLI separation
+- `splitter.sources.youtube` module (yt-dlp + ffmpeg) and temp download cache under `%TEMP%\AudioSplitter\downloads`
+
 ### Changed
 
+- Desktop workflow is now load → preview → Split for both local files and YouTube URLs (split no longer starts automatically on file pick)
+- Windows release builds bundle CUDA-enabled PyTorch (cu124) so separation uses an NVIDIA GPU when available; falls back to CPU otherwise
+
 ### Fixed
+
+- GitHub release workflow: fail fast when version output is empty, validate semver tags, and write `GITHUB_OUTPUT` with UTF-8 so releases are tagged as `v0.1.2` instead of bare `v`
 
 ### Removed
 

@@ -113,6 +113,69 @@ def test_cli_split_missing_file() -> None:
     assert "Error:" in result.stdout
 
 
+def test_cli_split_requires_input_or_url() -> None:
+    result = runner.invoke(app, ["split"])
+    assert result.exit_code == 1
+    assert "input file or --url" in result.stdout
+
+
+def test_cli_split_rejects_file_and_url(tmp_path: Path) -> None:
+    input_path = tmp_path / "tone.wav"
+    input_path.write_bytes(b"RIFF")
+    result = runner.invoke(
+        app,
+        ["split", str(input_path), "--url", "https://www.youtube.com/watch?v=abc123"],
+    )
+    assert result.exit_code == 1
+    assert "not both" in result.stdout
+
+
+def test_cli_split_url_mode(tmp_path: Path) -> None:
+    downloaded = tmp_path / "abc123.mp3"
+    downloaded.write_bytes(b"RIFF")
+
+    with (
+        patch("splitter.sources.youtube.download_audio", return_value=downloaded),
+        patch("splitter.cli.separate_file") as separate_file,
+        patch("splitter.temp_cache.release") as release_mock,
+    ):
+        separate_file.return_value.output_dir = tmp_path / "stems" / "abc123"
+        separate_file.return_value.stems = ("vocals", "drums", "bass", "other")
+        result = runner.invoke(
+            app,
+            ["split", "--url", "https://www.youtube.com/watch?v=abc123"],
+        )
+
+    assert result.exit_code == 0
+    separate_file.assert_called_once()
+    release_mock.assert_called_once_with(downloaded)
+
+
+def test_cli_split_url_keep_download(tmp_path: Path) -> None:
+    downloaded = tmp_path / "abc123.mp3"
+    downloaded.write_bytes(b"RIFF")
+
+    with (
+        patch("splitter.sources.youtube.download_audio", return_value=downloaded),
+        patch("splitter.cli.separate_file") as separate_file,
+        patch("splitter.temp_cache.release") as release_mock,
+    ):
+        separate_file.return_value.output_dir = tmp_path / "stems" / "abc123"
+        separate_file.return_value.stems = ("vocals", "drums", "bass", "other")
+        result = runner.invoke(
+            app,
+            [
+                "split",
+                "--url",
+                "https://www.youtube.com/watch?v=abc123",
+                "--keep-download",
+            ],
+        )
+
+    assert result.exit_code == 0
+    release_mock.assert_not_called()
+
+
 @pytest.mark.slow
 def test_separate_file_writes_stems(tmp_path: Path) -> None:
     input_path = tmp_path / "tone.wav"

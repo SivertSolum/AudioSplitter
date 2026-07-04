@@ -7,10 +7,13 @@ import uuid
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from splitter.models import FOUR_STEM_OUTPUTS, SUPPORTED_SEPARATION_MODES, SeparationMode
 from splitter.separator import SeparationOptions, separate_file, validate_input_path
+from splitter.temp_cache import release as release_temp_file
+
+SourceType = Literal["local", "youtube"]
 
 
 @dataclass
@@ -22,6 +25,9 @@ class JobState:
     input_path: str | None = None
     output_dir: str | None = None
     stems: list[str] = field(default_factory=list)
+    source_type: SourceType | None = None
+    display_name: str | None = None
+    is_temp_input: bool = False
 
 
 class DesktopApi:
@@ -33,6 +39,10 @@ class DesktopApi:
         self._lock = threading.Lock()
         self._job = JobState(job_id="")
         self._thread: threading.Thread | None = None
+        self._loaded_input_path: Path | None = None
+        self._loaded_display_name: str | None = None
+        self._loaded_source_type: SourceType | None = None
+        self._loaded_is_temp: bool = False
 
     def get_status(self) -> dict[str, Any]:
         with self._lock:
@@ -44,9 +54,11 @@ class DesktopApi:
                 "inputPath": self._job.input_path,
                 "outputDir": self._job.output_dir,
                 "stems": list(self._job.stems),
+                "sourceType": self._job.source_type,
+                "displayName": self._job.display_name,
             }
 
-    def pick_input_file(self) -> str | None:
+    def pick_input_file(self) -> dict[str, Any]:
         import webview
 
         window = webview.windows[0]
@@ -56,8 +68,75 @@ class DesktopApi:
             file_types=("Audio Files (*.mp3;*.wav;*.flac;*.m4a;*.ogg;*.aac;*.wma)",),
         )
         if not result:
+            return {"ok": False}
+        path = Path(result[0])
+        try:
+            validate_input_path(path)
+        except (FileNotFoundError, ValueError, RuntimeError) as exc:
+            return {"ok": False, "error": str(exc)}
+
+        self.clear_loaded_input()
+        self._set_loaded_input(path, display_name=str(path), source_type="local", is_temp=False)
+        return {
+            "ok": True,
+            "path": str(path),
+            "displayName": str(path),
+            "uri": path.resolve().as_uri(),
+        }
+
+    def download_youtube(self, url: str) -> dict[str, Any]:
+        with self._lock:
+            if self._job.status in {"downloading", "queued", "running"}:
+                return {"ok": False, "error": "A job is already in progress."}
+
+        try:
+            from splitter.sources.youtube import validate_youtube_url
+
+            cleaned_url = validate_youtube_url(url)
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
+
+        self.clear_loaded_input()
+        job_id = uuid.uuid4().hex
+        with self._lock:
+            self._job = JobState(
+                job_id=job_id,
+                status="downloading",
+                message="Downloading audio from YouTube…",
+                source_type="youtube",
+                display_name=cleaned_url,
+            )
+
+        self._thread = threading.Thread(
+            target=self._run_download,
+            args=(job_id, cleaned_url),
+            daemon=True,
+        )
+        self._thread.start()
+        return {"ok": True, "jobId": job_id}
+
+    def get_input_uri(self) -> str | None:
+        with self._lock:
+            if self._loaded_input_path is None:
+                return None
+            path = self._loaded_input_path
+        if not path.exists():
             return None
-        return str(result[0])
+        return path.resolve().as_uri()
+
+    def clear_loaded_input(self) -> None:
+        with self._lock:
+            path = self._loaded_input_path
+            is_temp = self._loaded_is_temp
+            self._loaded_input_path = None
+            self._loaded_display_name = None
+            self._loaded_source_type = None
+            self._loaded_is_temp = False
+            if self._job.status == "ready":
+                self._job = JobState(job_id="")
+
+        if path is not None and is_temp:
+            release_temp_file(path)
 
     def get_available_stems(self) -> list[str]:
         return list(FOUR_STEM_OUTPUTS)
@@ -77,14 +156,22 @@ class DesktopApi:
             return {"ok": False, "error": str(exc)}
 
         with self._lock:
-            if self._job.status in {"queued", "running"}:
+            if self._job.status in {"downloading", "queued", "running"}:
                 return {"ok": False, "error": "A separation job is already running."}
+            if self._loaded_input_path is None or self._loaded_input_path != path:
+                return {"ok": False, "error": "Load an audio source before splitting."}
+            if self._job.status != "ready":
+                return {"ok": False, "error": "Audio is not ready to split."}
+
             job_id = uuid.uuid4().hex
             self._job = JobState(
                 job_id=job_id,
                 status="queued",
                 message="Queued for separation…",
                 input_path=str(path),
+                source_type=self._loaded_source_type,
+                display_name=self._loaded_display_name,
+                is_temp_input=self._loaded_is_temp,
             )
 
         self._thread = threading.Thread(
@@ -164,6 +251,39 @@ class DesktopApi:
             subprocess.run(["xdg-open", str(path)], check=False)
         return {"ok": True}
 
+    def _set_loaded_input(
+        self,
+        path: Path,
+        *,
+        display_name: str,
+        source_type: SourceType,
+        is_temp: bool,
+        job_id: str | None = None,
+    ) -> None:
+        with self._lock:
+            self._loaded_input_path = path
+            self._loaded_display_name = display_name
+            self._loaded_source_type = source_type
+            self._loaded_is_temp = is_temp
+            if job_id is not None and self._job.job_id == job_id:
+                self._job.status = "ready"
+                self._job.message = "Preview the track, then click Split when ready."
+                self._job.input_path = str(path)
+                self._job.source_type = source_type
+                self._job.display_name = display_name
+                self._job.is_temp_input = is_temp
+                self._job.error = None
+            else:
+                self._job = JobState(
+                    job_id=job_id or uuid.uuid4().hex,
+                    status="ready",
+                    message="Preview the track, then click Split when ready.",
+                    input_path=str(path),
+                    source_type=source_type,
+                    display_name=display_name,
+                    is_temp_input=is_temp,
+                )
+
     def _validate_separation_mode(self, mode: str) -> SeparationMode:
         if mode not in SUPPORTED_SEPARATION_MODES:
             supported = ", ".join(SUPPORTED_SEPARATION_MODES)
@@ -187,6 +307,32 @@ class DesktopApi:
             )
         return tuple(selected_stems)
 
+    def _run_download(self, job_id: str, url: str) -> None:
+        try:
+            from splitter.sources.youtube import download_audio, fetch_metadata
+
+            metadata = fetch_metadata(url)
+            self._set_job(
+                job_id,
+                message=f"Downloading “{metadata.title}” from YouTube…",
+                display_name=metadata.title,
+            )
+            path = download_audio(url)
+            self._set_loaded_input(
+                path,
+                display_name=metadata.title,
+                source_type="youtube",
+                is_temp=True,
+                job_id=job_id,
+            )
+        except Exception as exc:  # noqa: BLE001 - show failures in UI
+            self._set_job(
+                job_id,
+                status="error",
+                message="YouTube download failed.",
+                error=str(exc),
+            )
+
     def _run_separation(
         self,
         job_id: str,
@@ -200,6 +346,9 @@ class DesktopApi:
             message="Separating stems with Demucs…",
             error=None,
         )
+        is_temp_input = False
+        with self._lock:
+            is_temp_input = self._job.is_temp_input
         try:
             result = separate_file(
                 input_path,
@@ -218,6 +367,12 @@ class DesktopApi:
                 stems=list(result.stems),
                 error=None,
             )
+            if is_temp_input:
+                release_temp_file(input_path)
+                with self._lock:
+                    if self._loaded_input_path == input_path:
+                        self._loaded_input_path = None
+                        self._loaded_is_temp = False
         except Exception as exc:  # noqa: BLE001 - show failures in UI
             self._set_job(
                 job_id,

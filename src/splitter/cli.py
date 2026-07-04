@@ -88,7 +88,10 @@ def _run_split(
 
 @app.command("split")
 def split_command(
-    input_path: Path = typer.Argument(..., help="Audio file to separate."),
+    input_path: Optional[Path] = typer.Argument(
+        None,
+        help="Audio file to separate.",
+    ),
     output_dir: Path = typer.Option(
         Path("stems"),
         "--output",
@@ -123,13 +126,44 @@ def split_command(
         "--stems",
         help="Comma-separated stems for custom mode, e.g. vocals,drums.",
     ),
+    url: Optional[str] = typer.Option(
+        None,
+        "--url",
+        help="YouTube video URL to download and separate.",
+    ),
+    keep_download: bool = typer.Option(
+        False,
+        "--keep-download",
+        help="Keep the downloaded YouTube audio file after separation.",
+    ),
 ) -> None:
     """Separate one audio file into stems."""
     try:
+        if input_path is not None and url is not None:
+            raise ValueError("Provide either an input file or --url, not both.")
+        if input_path is None and url is None:
+            raise ValueError("Provide an input file or --url.")
+
         selected_stems = _parse_stems_option(stems)
         if mode == "custom" and selected_stems is None:
             raise ValueError("Custom mode requires --stems with at least one stem.")
-        _run_split(input_path, output_dir, model, device, mode, selected_stems, two_stems)
+
+        resolved_input = input_path
+        downloaded_path: Path | None = None
+        if url is not None:
+            from splitter.sources.youtube import download_audio
+            from splitter.temp_cache import release
+
+            console.print("[bold]Downloading audio from YouTube…[/bold]")
+            downloaded_path = download_audio(url)
+            resolved_input = downloaded_path
+            console.print(f"[green]Downloaded:[/green] {downloaded_path}")
+
+        assert resolved_input is not None
+        _run_split(resolved_input, output_dir, model, device, mode, selected_stems, two_stems)
+
+        if downloaded_path is not None and not keep_download:
+            release(downloaded_path)
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(code=1) from exc

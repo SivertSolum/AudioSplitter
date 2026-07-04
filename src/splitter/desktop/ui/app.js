@@ -7,6 +7,9 @@ const STEM_LABELS = {
 };
 
 const pickFileButton = document.getElementById("pick-file");
+const loadYoutubeButton = document.getElementById("load-youtube");
+const youtubeUrlInput = document.getElementById("youtube-url");
+const splitButton = document.getElementById("split-track");
 const openFolderButton = document.getElementById("open-folder");
 const downloadAllButton = document.getElementById("download-all");
 const selectedFileLabel = document.getElementById("selected-file");
@@ -21,11 +24,17 @@ const stemGrid = document.getElementById("stem-grid");
 const customStemsPanel = document.getElementById("custom-stems");
 const modeInputs = document.querySelectorAll('input[name="split-mode"]');
 const customStemInputs = document.querySelectorAll('input[name="custom-stem"]');
+const sourceTabLocal = document.getElementById("source-tab-local");
+const sourceTabYoutube = document.getElementById("source-tab-youtube");
+const sourcePanelLocal = document.getElementById("source-panel-local");
+const sourcePanelYoutube = document.getElementById("source-panel-youtube");
 
 let pollTimer = null;
 let elapsedTimer = null;
 let elapsedSeconds = 0;
 let currentInputPath = null;
+let currentDisplayName = null;
+let activeSourceTab = "local";
 
 function api() {
   return window.pywebview.api;
@@ -42,22 +51,56 @@ function getSelectedCustomStems() {
     .map((input) => input.value);
 }
 
+function isBusy() {
+  return ["downloading", "queued", "running"].includes(statusDot.dataset.status || "");
+}
+
 function updateModeUi() {
   const mode = getSelectedMode();
   customStemsPanel.hidden = mode !== "custom";
-  updatePickFileState();
+  updateActionState();
 }
 
-function updatePickFileState() {
+function updateActionState() {
   const mode = getSelectedMode();
   const customInvalid = mode === "custom" && getSelectedCustomStems().length === 0;
-  const isBusy = statusDot.classList.contains("active");
-  pickFileButton.disabled = customInvalid || isBusy;
+  const busy = isBusy();
+  const ready = statusDot.dataset.status === "ready" && currentInputPath;
+
+  pickFileButton.disabled = busy;
+  loadYoutubeButton.disabled = busy;
+  youtubeUrlInput.disabled = busy;
+  sourceTabLocal.disabled = busy;
+  sourceTabYoutube.disabled = busy;
+  splitButton.disabled = busy || customInvalid || !ready;
+  openFolderButton.disabled = statusDot.dataset.status !== "done";
+}
+
+function setSourceTab(tab) {
+  if (busy()) {
+    return;
+  }
+  activeSourceTab = tab;
+  const isLocal = tab === "local";
+  sourceTabLocal.classList.toggle("active", isLocal);
+  sourceTabYoutube.classList.toggle("active", !isLocal);
+  sourceTabLocal.setAttribute("aria-selected", String(isLocal));
+  sourceTabYoutube.setAttribute("aria-selected", String(!isLocal));
+  sourcePanelLocal.hidden = !isLocal;
+  sourcePanelYoutube.hidden = isLocal;
 }
 
 function setStatus(status, message, error) {
+  statusDot.dataset.status = status;
   statusDot.className = "status-dot";
-  if (status === "queued" || status === "running" || status === "uploading") {
+  if (status === "downloading") {
+    statusDot.classList.add("active");
+    statusTitle.textContent = "Downloading from YouTube";
+    elapsedLabel.hidden = true;
+  } else if (status === "ready") {
+    statusTitle.textContent = "Ready to split";
+    elapsedLabel.hidden = true;
+  } else if (status === "queued" || status === "running") {
     statusDot.classList.add("active");
     statusTitle.textContent =
       status === "queued" ? "Queued for separation" : "Separating stems with Demucs…";
@@ -68,10 +111,10 @@ function setStatus(status, message, error) {
     elapsedLabel.hidden = true;
   } else if (status === "error") {
     statusDot.classList.add("error");
-    statusTitle.textContent = "Separation failed";
+    statusTitle.textContent = "Something went wrong";
     elapsedLabel.hidden = true;
   } else {
-    statusTitle.textContent = "Waiting for a file";
+    statusTitle.textContent = "Waiting for a source";
     elapsedLabel.hidden = true;
   }
 
@@ -83,7 +126,7 @@ function setStatus(status, message, error) {
     errorMessage.hidden = true;
     errorMessage.textContent = "";
   }
-  updatePickFileState();
+  updateActionState();
 }
 
 function startElapsedTimer() {
@@ -108,25 +151,57 @@ function stopElapsedTimer() {
   }
 }
 
+function resetStemSection() {
+  stemSection.hidden = true;
+  stemGrid.innerHTML = "";
+  openFolderButton.disabled = true;
+}
+
+function showLoadedSource(path, displayName, uri) {
+  currentInputPath = path;
+  currentDisplayName = displayName;
+  selectedFileLabel.textContent = displayName;
+  originalPreview.hidden = false;
+  originalPreview.src = uri;
+  resetStemSection();
+}
+
 async function pollStatus() {
   const status = await api().get_status();
   setStatus(status.status, status.message, status.error);
 
+  if (status.status === "ready" && status.inputPath) {
+    const uri = await api().get_input_uri();
+    if (uri) {
+      showLoadedSource(status.inputPath, status.displayName || status.inputPath, uri);
+    }
+    stopElapsedTimer();
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+    updateActionState();
+    return;
+  }
+
   if (status.status === "done") {
     stopElapsedTimer();
-    pickFileButton.disabled = false;
-    openFolderButton.disabled = false;
     await renderStems(status.stems);
     window.clearInterval(pollTimer);
     pollTimer = null;
-    updatePickFileState();
+    updateActionState();
   } else if (status.status === "error") {
     stopElapsedTimer();
-    pickFileButton.disabled = false;
     window.clearInterval(pollTimer);
     pollTimer = null;
-    updatePickFileState();
+    updateActionState();
   }
+}
+
+function beginPolling() {
+  if (pollTimer) {
+    window.clearInterval(pollTimer);
+  }
+  pollTimer = window.setInterval(pollStatus, 1500);
+  pollStatus();
 }
 
 async function renderStems(stems) {
@@ -170,40 +245,64 @@ async function renderStems(stems) {
 }
 
 async function handlePickFile() {
+  const result = await api().pick_input_file();
+  if (!result.ok) {
+    if (result.error) {
+      setStatus("error", "Could not load file.", result.error);
+    }
+    return;
+  }
+
+  showLoadedSource(result.path, result.displayName, result.uri);
+  setStatus("ready", "Preview the track, then click Split when ready.", null);
+}
+
+async function handleLoadYoutube() {
+  const url = youtubeUrlInput.value.trim();
+  if (!url) {
+    setStatus("error", "Enter a YouTube URL.", "YouTube URL cannot be empty.");
+    return;
+  }
+
+  resetStemSection();
+  currentInputPath = null;
+  currentDisplayName = null;
+  originalPreview.hidden = true;
+  originalPreview.removeAttribute("src");
+  setStatus("downloading", "Downloading audio from YouTube…", null);
+
+  const result = await api().download_youtube(url);
+  if (!result.ok) {
+    setStatus("error", "Could not start download.", result.error);
+    return;
+  }
+
+  beginPolling();
+}
+
+async function handleSplit() {
+  if (!currentInputPath) {
+    return;
+  }
+
   const mode = getSelectedMode();
   const selectedStems = mode === "custom" ? getSelectedCustomStems() : null;
 
-  const inputPath = await api().pick_input_file();
-  if (!inputPath) {
-    return;
-  }
-
-  currentInputPath = inputPath;
-  selectedFileLabel.textContent = inputPath;
-  originalPreview.hidden = false;
-  originalPreview.src = `file:///${inputPath.replace(/\\/g, "/")}`;
-
-  pickFileButton.disabled = true;
+  splitButton.disabled = true;
   openFolderButton.disabled = true;
-  stemSection.hidden = true;
-  stemGrid.innerHTML = "";
+  resetStemSection();
   setStatus("queued", "Starting separation…", null);
   startElapsedTimer();
 
-  const result = await api().start_separation(inputPath, mode, selectedStems);
+  const result = await api().start_separation(currentInputPath, mode, selectedStems);
   if (!result.ok) {
     stopElapsedTimer();
-    pickFileButton.disabled = false;
     setStatus("error", "Could not start separation.", result.error);
-    updatePickFileState();
+    updateActionState();
     return;
   }
 
-  if (pollTimer) {
-    window.clearInterval(pollTimer);
-  }
-  pollTimer = window.setInterval(pollStatus, 1500);
-  await pollStatus();
+  beginPolling();
 }
 
 async function handleDownloadAll() {
@@ -211,9 +310,11 @@ async function handleDownloadAll() {
   if (status.status !== "done") {
     return;
   }
-  const baseName = currentInputPath
-    ? currentInputPath.split(/[\\/]/).pop().replace(/\.[^.]+$/, "")
-    : "stems";
+  const baseName = currentDisplayName
+    ? currentDisplayName.replace(/[<>:"/\\|?*]/g, "").trim() || "stems"
+    : currentInputPath
+      ? currentInputPath.split(/[\\/]/).pop().replace(/\.[^.]+$/, "")
+      : "stems";
   const destination = await api().pick_save_file(`${baseName}-stems.zip`);
   if (!destination) {
     return;
@@ -229,10 +330,15 @@ modeInputs.forEach((input) => {
 });
 
 customStemInputs.forEach((input) => {
-  input.addEventListener("change", updatePickFileState);
+  input.addEventListener("change", updateActionState);
 });
 
+sourceTabLocal.addEventListener("click", () => setSourceTab("local"));
+sourceTabYoutube.addEventListener("click", () => setSourceTab("youtube"));
+
 pickFileButton.addEventListener("click", handlePickFile);
+loadYoutubeButton.addEventListener("click", handleLoadYoutube);
+splitButton.addEventListener("click", handleSplit);
 openFolderButton.addEventListener("click", async () => {
   const result = await api().open_output_folder();
   if (!result.ok) {
@@ -241,7 +347,17 @@ openFolderButton.addEventListener("click", async () => {
 });
 downloadAllButton.addEventListener("click", handleDownloadAll);
 
+youtubeUrlInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !loadYoutubeButton.disabled) {
+    handleLoadYoutube();
+  }
+});
+
 window.addEventListener("pywebviewready", () => {
   updateModeUi();
-  setStatus("idle", "Choose a split mode, then select a track.", null);
+  setStatus(
+    "idle",
+    "Choose a split mode, load a local file or YouTube URL, preview the track, then split.",
+    null,
+  );
 });

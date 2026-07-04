@@ -34,6 +34,8 @@ audio-splitter/
 │   ├── separator.py               # Core pipeline: separate_file(), validate_input_path()
 │   ├── models.py                  # Model names, resolve_device()
 │   ├── audio_io.py                # WAV writer
+│   ├── sources/youtube.py         # YouTube download via yt-dlp
+│   ├── temp_cache.py              # Temp download cache
 │   └── desktop/
 │       ├── app.py                 # pywebview launcher
 │       ├── api.py                 # JS ↔ Python bridge (DesktopApi)
@@ -55,8 +57,10 @@ audio-splitter/
 
 ```powershell
 pip install -e ".[dev]"           # CLI + tests
-pip install -e ".[desktop]"       # Desktop app + PyInstaller
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # CPU wheels for local builds
+pip install -e ".[desktop]"       # Desktop app + PyInstaller + yt-dlp
+pip install -e ".[youtube]"       # YouTube URL support only (CLI)
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124   # GPU builds (matches release)
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # CPU-only local builds
 ```
 
 **CLI:**
@@ -83,9 +87,12 @@ pytest -m slow                    # Real Demucs inference — slow, optional
 **Package executable locally:**
 
 ```powershell
+pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
 pyinstaller --noconfirm build/splitter-desktop.spec
 # Output: dist/AudioSplitter/AudioSplitter.exe
 ```
+
+CI release builds use the same CUDA wheel index (`cu124`). Use CPU wheels only when testing a smaller local package.
 
 **Running checks after changes:**
 
@@ -117,8 +124,10 @@ result = separate_file(
 
 **Desktop API pattern:**
 
-- Long-running separation runs in a background thread (`DesktopApi._run_separation`).
-- UI polls `get_status()`; never block the pywebview main thread on Demucs inference.
+- Long-running download and separation run in background threads (`_run_download`, `_run_separation`).
+- UI polls `get_status()`; never block the pywebview main thread on yt-dlp or Demucs work.
+- Job statuses: `idle`, `downloading`, `ready`, `queued`, `running`, `done`, `error`.
+- Desktop workflow: load source (local or YouTube) → preview → explicit Split.
 
 **Common patterns:**
 

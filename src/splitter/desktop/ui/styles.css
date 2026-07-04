@@ -58,6 +58,59 @@ body {
   gap: 12px;
 }
 
+.split-actions {
+  margin-top: 16px;
+}
+
+.source-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.source-tab {
+  background: rgba(9, 9, 11, 0.65);
+  color: #d4d4d8;
+  border: 1px solid #3f3f46;
+}
+
+.source-tab.active {
+  background: #0ea5e9;
+  color: #082f49;
+  border-color: #0ea5e9;
+}
+
+.source-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.youtube-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.youtube-input-row input {
+  flex: 1 1 260px;
+  min-width: 0;
+  border-radius: 999px;
+  border: 1px solid #3f3f46;
+  background: rgba(9, 9, 11, 0.65);
+  color: #f4f4f5;
+  padding: 10px 16px;
+}
+
+.youtube-input-row input:focus {
+  outline: 2px solid rgba(14, 165, 233, 0.45);
+  border-color: #0ea5e9;
+}
+
+#original-preview {
+  width: 100%;
+  margin-top: 12px;
+}
+
 button {
   border: none;
   border-radius: 999px;
