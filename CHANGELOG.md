@@ -25,6 +25,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+### Removed
+
+## [0.1.9] - 2026-07-04
+### Added
+
+### Changed
+
+### Fixed
+
 - Fixes
 
 ### Removed
