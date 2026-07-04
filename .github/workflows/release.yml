@@ -41,6 +41,7 @@ jobs:
           }
 
       - name: Commit release version files
+        id: version_commit
         if: steps.release.outputs.changed == 'true'
         shell: pwsh
         run: |
@@ -50,6 +51,7 @@ jobs:
           git add CHANGELOG.md pyproject.toml src/splitter/__init__.py
           git commit -m "chore: release v$version [skip ci]"
           git push
+          "sha=$(git rev-parse HEAD)" >> $env:GITHUB_OUTPUT
 
       - name: Install PyTorch (CPU)
         run: |
@@ -82,10 +84,47 @@ jobs:
         run: python scripts/sync_changelog.py --extract release-notes.md
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.release.outputs.version }}
-          name: Audio Splitter ${{ steps.release.outputs.version }}
-          body_path: release-notes.md
-          files: AudioSplitter-${{ steps.release.outputs.version }}-Windows-x64.zip
-          make_latest: true
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ steps.release.outputs.version }}"
+          $tag = "v$version"
+          $zip = "AudioSplitter-$version-Windows-x64.zip"
+          $target = "${{ steps.version_commit.outputs.sha }}"
+          if (-not $target) {
+            $target = git rev-parse HEAD
+          }
+
+          $releaseExists = $false
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $releaseExists = $true
+          }
+
+          if ($releaseExists) {
+            Write-Host "Release $tag already exists; uploading asset with --clobber."
+            gh release upload $tag $zip --clobber
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            gh release edit $tag --title "Audio Splitter $version" --notes-file release-notes.md --latest
+            exit $LASTEXITCODE
+          }
+
+          $maxAttempts = 5
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "Creating release $tag (attempt $attempt/$maxAttempts)..."
+            gh release create $tag `
+              --target $target `
+              --title "Audio Splitter $version" `
+              --notes-file release-notes.md `
+              $zip `
+              --latest
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+            if ($attempt -lt $maxAttempts) {
+              Write-Host "Release create failed; waiting 15s before retry..."
+              Start-Sleep -Seconds 15
+            }
+          }
+          exit 1

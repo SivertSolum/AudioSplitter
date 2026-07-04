@@ -41,6 +41,7 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- GitHub release workflow: replace deprecated Node 20-based release action with `gh` CLI to fix asset upload 307 errors
 - GitHub Actions release workflow: fix PowerShell syntax when detecting promoted `CHANGELOG.md` changes
 
 ### Removed
