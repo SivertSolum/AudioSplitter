@@ -25,6 +25,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+### Removed
+
+## [0.1.4] - 2026-07-04
+### Added
+
+### Changed
+
+### Fixed
+
 - Windows EXE startup no longer fails with `Python.Runtime.Loader.Initialize` when launched from a downloaded release (pythonnet/clr_loader bundling, coreclr runtime, Mark-of-the-Web unblock)
 
 ### Removed
