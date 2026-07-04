@@ -30,6 +30,17 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Removed
 
+## [0.1.7] - 2026-07-04
+### Added
+
+### Changed
+
+- PyInstaller desktop bundle: replace `collect_all` for torch/torchaudio with minimal custom hooks and exclude unused PyTorch subpackages (testing, distributed, ONNX, etc.) so release zips stay under GitHub's 2 GB asset limit
+
+### Fixed
+
+### Removed
+
 ## [0.1.6] - 2026-07-04
 ### Added
 
