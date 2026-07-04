@@ -39,6 +39,22 @@ def test_validate_input_path_unsupported_extension(tmp_path: Path) -> None:
         validate_input_path(bad_file)
 
 
+def test_validate_file_size_rejects_large_file(tmp_path: Path) -> None:
+    from splitter.separator import validate_file_size
+
+    large_file = tmp_path / "large.wav"
+    large_file.write_bytes(b"\x00" * (51 * 1024 * 1024))
+    with pytest.raises(ValueError, match="exceeds the 50 MB limit"):
+        validate_file_size(large_file, max_mb=50)
+
+
+def test_validate_input_path_enforces_size_when_requested(tmp_path: Path) -> None:
+    large_file = tmp_path / "large.wav"
+    large_file.write_bytes(b"\x00" * (51 * 1024 * 1024))
+    with pytest.raises(ValueError, match="exceeds the 50 MB limit"):
+        validate_input_path(large_file, max_mb=50)
+
+
 def test_cli_info_runs() -> None:
     result = runner.invoke(app, ["info"])
     assert result.exit_code == 0

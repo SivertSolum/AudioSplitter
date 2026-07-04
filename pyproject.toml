@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "splitter"
 version = "0.1.0"
-description = "Local CLI for splitting audio into vocals, drums, bass, and other stems"
+description = "CLI and desktop app for splitting audio into vocals, drums, bass, and other stems"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,12 +18,20 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+desktop = [
+  "pywebview>=5.0",
+  "pyinstaller>=6.0",
+]
 
 [project.scripts]
 splitter = "splitter.cli:app"
+splitter-desktop = "splitter.desktop.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+splitter = ["desktop/ui/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

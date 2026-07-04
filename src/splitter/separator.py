@@ -17,6 +17,7 @@ from splitter.models import DEFAULT_MODEL, FOUR_STEM_OUTPUTS, ModelName, resolve
 
 
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac", ".wma"}
+DEFAULT_MAX_FILE_SIZE_MB = 50
 
 
 @dataclass(frozen=True)
@@ -44,7 +45,15 @@ def needs_ffmpeg(path: Path) -> bool:
     return path.suffix.lower() != ".wav"
 
 
-def validate_input_path(path: Path) -> None:
+def validate_file_size(path: Path, max_mb: int = DEFAULT_MAX_FILE_SIZE_MB) -> None:
+    size_mb = path.stat().st_size / (1024 * 1024)
+    if size_mb > max_mb:
+        raise ValueError(
+            f"File size {size_mb:.1f} MB exceeds the {max_mb} MB limit."
+        )
+
+
+def validate_input_path(path: Path, *, max_mb: int | None = None) -> None:
     if not path.exists():
         raise FileNotFoundError(f"Input file not found: {path}")
     if not path.is_file():
@@ -57,6 +66,8 @@ def validate_input_path(path: Path) -> None:
             f"ffmpeg is required to decode {path.suffix} files but was not found on PATH. "
             "Install ffmpeg and ensure it is available in your terminal."
         )
+    if max_mb is not None:
+        validate_file_size(path, max_mb)
 
 
 def iter_audio_files(directory: Path) -> Iterable[Path]:

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Splitter</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">Demucs powered</p>
+        <h1>Audio Splitter</h1>
+        <p class="subtitle">
+          Split a mixed track into vocals, drums, bass, and other stems locally on your machine.
+        </p>
+      </header>
+
+      <section class="card">
+        <div class="actions">
+          <button id="pick-file" type="button">Select audio file</button>
+          <button id="open-folder" type="button" class="secondary" disabled>Open output folder</button>
+        </div>
+        <p id="selected-file" class="muted">No file selected.</p>
+        <audio id="original-preview" controls hidden></audio>
+      </section>
+
+      <section class="card">
+        <div class="status-row">
+          <span id="status-dot" class="status-dot idle"></span>
+          <div>
+            <h2 id="status-title">Waiting for a file</h2>
+            <p id="status-message" class="muted">
+              Choose a track to split it into four stems. Models download on first run.
+            </p>
+            <p id="elapsed" class="elapsed" hidden></p>
+            <p id="error-message" class="error" hidden></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="stem-section" class="card" hidden>
+        <div class="section-header">
+          <h2>Stem previews</h2>
+          <button id="download-all" type="button">Download all stems (.zip)</button>
+        </div>
+        <div id="stem-grid" class="stem-grid"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
