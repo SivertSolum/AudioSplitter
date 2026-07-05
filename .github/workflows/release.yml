@@ -73,7 +73,7 @@ jobs:
 
       - name: Install Demucs fork and desktop build tools
         run: |
-          pip install dora-search einops julius lameenc openunmix pyyaml tqdm typer rich pywebview pyinstaller yt-dlp
+          pip install numpy dora-search einops julius lameenc openunmix pyyaml tqdm typer rich pywebview pyinstaller yt-dlp
           pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
           pip install -e ".[desktop]" --no-deps
 

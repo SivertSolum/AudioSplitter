@@ -17,4 +17,12 @@ hiddenimports = [
     "demucs.states",
     "demucs.transformer",
     "demucs.utils",
+    # Demucs runtime dependencies (installed separately with --no-deps).
+    "dora",
+    "einops",
+    "julius",
+    "lameenc",
+    "openunmix",
+    "yaml",
+    "tqdm",
 ]

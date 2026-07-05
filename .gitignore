@@ -4,8 +4,8 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
-build/**/build/
-build/**/dist/
+# PyInstaller intermediate output (keep build/*.spec and build/hooks/)
+build/splitter-desktop/
 *.spec.bak
 .pytest_cache/
 .mypy_cache/

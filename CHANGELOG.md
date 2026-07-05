@@ -25,6 +25,9 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+- PyInstaller build: bundle NumPy and lameenc binaries so stem separation no longer fails with `No module named 'numpy.core.multiarray'`
+- Declare `numpy` as an explicit project dependency (used directly by `audio_io.py`)
+
 ### Removed
 
 ## [0.1.13] - 2026-07-05

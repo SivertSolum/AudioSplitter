@@ -58,7 +58,7 @@ audio-splitter/
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124   # GPU local builds
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu   # CPU (matches CI release)
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
+pip install numpy dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[dev]" --no-deps && pip install typer rich pytest           # CLI + tests
 pip install -e ".[desktop]" --no-deps && pip install typer rich pywebview pyinstaller  # Desktop
@@ -89,7 +89,7 @@ pytest -m slow                    # Real Demucs inference — slow, optional
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
+pip install numpy dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[desktop]" --no-deps
 pip install typer rich

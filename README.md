@@ -77,7 +77,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
+pip install numpy dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[dev]" --no-deps
 pip install typer rich pytest
@@ -230,7 +230,7 @@ GitHub releases match the **CPU** build (same as CI). For GPU support, use the C
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller yt-dlp
+pip install numpy dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller yt-dlp
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[desktop]" --no-deps
 pip install typer rich
@@ -241,7 +241,7 @@ CPU-only build (matches the published release zip):
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller yt-dlp
+pip install numpy dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller yt-dlp
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[desktop]" --no-deps
 pip install typer rich
