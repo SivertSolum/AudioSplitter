@@ -157,12 +157,27 @@ change set — features, fixes, refactors with user impact, docs, CI, packaging,
 reflect new behavior. Skip changelog entries only for trivial internal edits with no user-visible
 effect (for example typo fixes in comments).
 
+### Critical rules (CI depends on these)
+
+**Only edit `## [Unreleased]`.** All new bullets go there — in `Added`, `Changed`, `Fixed`, or
+`Removed`.
+
+**Never edit a released `## [x.y.z]` section.** Sections below `[Unreleased]` are written by CI
+when a version ships. Adding or changing bullets under an existing version (for example
+`## [0.1.14]`) will **not** appear in the next GitHub Release and **breaks the release pipeline**:
+CI promotes only what is under `[Unreleased]`, and an empty `[Unreleased]` causes the workflow to
+fail or publish a release with no notes.
+
+**Never create a new `## [x.y.z]` heading yourself.** CI creates the version heading, date, and
+`pyproject.toml` bump via `scripts/sync_changelog.py --prepare-release`.
+
 When you make user-visible changes:
 
 1. Add entries under `## [Unreleased]` only — in `Added`, `Changed`, `Fixed`, or `Removed`.
 2. Use concise, user-facing bullet points (not commit hashes).
 3. Do **not** create `## [x.y.z]` sections manually; CI writes them for you.
 4. Do **not** bump `version` in `pyproject.toml` for routine releases; CI increments the patch version automatically.
+5. Do **not** move notes into a past release section after CI has already cut that version.
 
 **Release workflow:**
 

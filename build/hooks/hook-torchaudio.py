@@ -1,4 +1,4 @@
-# Minimal torchaudio hook — include subpackages imported by torchaudio.__init__.
+# Minimal torchaudio hook — include subpackages for torchaudio 2.x (backend/io removed).
 
 from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules
 
@@ -8,14 +8,10 @@ module_collection_mode = "pyz+py"
 hiddenimports = [
     "torchaudio",
     "torchaudio._extension",
-    "torchaudio.backend",
-    "torchaudio.backend.common",
-    "torchaudio.backend.soundfile_backend",
-    "torchaudio.backend.sox_io_backend",
+    "torchaudio._internal",
     "torchaudio.compliance",
     "torchaudio.datasets",
     "torchaudio.functional",
-    "torchaudio.io",
     "torchaudio.models",
     "torchaudio.pipelines",
     "torchaudio.transforms",

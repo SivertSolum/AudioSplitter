@@ -74,8 +74,6 @@ hiddenimports = [
     "torch.nn",
     "torch.nn.functional",
     "torchaudio",
-    "torchaudio.backend.soundfile_backend",
-    "torchaudio.io",
 ]
 
 for package in ("webview", "pythonnet", "clr_loader"):
