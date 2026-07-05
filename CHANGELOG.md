@@ -25,6 +25,15 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Fixed
 
+### Removed
+
+## [0.1.15] - 2026-07-05
+### Added
+
+### Changed
+
+### Fixed
+
 - PyInstaller build: bundle NumPy and lameenc binaries so stem separation no longer fails with `No module named 'numpy.core.multiarray'`
 - Declare `numpy` as an explicit project dependency (used directly by `audio_io.py`)
 - Remove stale torchaudio 1.x hidden imports (`backend`, `io`) that caused PyInstaller errors on torchaudio 2.x
