@@ -18,9 +18,13 @@ dependencies = [
 dev = [
   "pytest>=8.0",
 ]
+youtube = [
+  "yt-dlp",
+]
 desktop = [
   "pywebview>=5.0",
   "pyinstaller>=6.0",
+  "yt-dlp",
 ]
 
 [project.scripts]

@@ -23,6 +23,8 @@ You do **not** need to bump `pyproject.toml` or create version headings manually
 
 ### Changed
 
+- README: document separation modes, project layout, and install paths; add `youtube` optional dependency (`yt-dlp`) to `pyproject.toml`
+
 ### Fixed
 
 ### Removed

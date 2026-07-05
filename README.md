@@ -1,6 +1,6 @@
-# Splitter
+# Audio Splitter
 
-CLI and desktop app for splitting a mixed audio track into **vocals**, **drums**, **bass**, and **other** stems using [Demucs](https://github.com/adefossez/demucs) (`htdemucs_ft` by default).
+Local CLI and Windows desktop app for splitting a mixed audio track into **vocals**, **drums**, **bass**, and **other** stems using [Demucs](https://github.com/adefossez/demucs) (`htdemucs_ft` by default).
 
 Everything runs locally on your machine. No cloud hosting or uploads are required.
 
@@ -18,22 +18,26 @@ Open-source models do **not** isolate every instrument into its own file. For gu
 ## Project layout
 
 ```
-audio-splitter/
+AudioSplitter/
 ├── src/splitter/              # Core Python package
 │   ├── cli.py                 # Typer CLI (`splitter` command)
 │   ├── separator.py           # Demucs separation pipeline
 │   ├── models.py              # Model names and device resolution
 │   ├── audio_io.py            # WAV output writer
+│   ├── changelog_sync.py      # Release version and changelog helpers
 │   ├── sources/youtube.py     # YouTube audio download (yt-dlp)
 │   ├── temp_cache.py          # Temp download cache for YouTube input
 │   └── desktop/               # Desktop GUI (pywebview)
 │       ├── app.py             # Window launcher
 │       ├── api.py             # Python ↔ UI bridge
 │       └── ui/                # Embedded HTML/CSS/JS UI
+├── scripts/
+│   └── sync_changelog.py      # CLI wrapper for release automation
 ├── build/
 │   └── splitter-desktop.spec  # PyInstaller build spec
 ├── .github/workflows/
 │   └── release.yml            # Windows release build on push to main
+├── AGENTS.md                    # Contributor and agent conventions
 └── tests/
 ```
 
@@ -68,7 +72,7 @@ ffmpeg -version
 Install **PyTorch before Demucs** — the maintained Demucs fork pins an older `torchaudio` range, so AudioSplitter installs it with `--no-deps` after PyTorch is in place.
 
 ```powershell
-cd path\to\audio-splitter
+cd path\to\AudioSplitter
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
@@ -77,6 +81,13 @@ pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml t
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[dev]" --no-deps
 pip install typer rich pytest
+```
+
+For YouTube URL input (`--url`), also install the `youtube` extra:
+
+```powershell
+pip install -e ".[youtube]" --no-deps
+pip install yt-dlp
 ```
 
 For CPU-only PyTorch, use `--index-url https://download.pytorch.org/whl/cpu` instead of `cu124`.
@@ -103,8 +114,12 @@ splitter split song.mp3 --model htdemucs
 splitter split song.mp3 --device cpu
 splitter split song.mp3 --device cuda
 
-# Karaoke / instrumental mode
+# Karaoke / instrumental mode (vocals + no_vocals)
 splitter split song.mp3 --two-stems vocals
+splitter split song.mp3 --mode vocal_split
+
+# Custom stem selection (writes only the stems you list)
+splitter split song.mp3 --mode custom --stems vocals,drums
 
 # Batch-process a folder
 splitter batch .\album\ -o .\stems
@@ -134,7 +149,7 @@ stems/
     └── other.wav
 ```
 
-With `--two-stems vocals`:
+With `--two-stems vocals` or `--mode vocal_split`:
 
 ```
 stems/
@@ -142,6 +157,23 @@ stems/
     ├── vocals.wav
     └── no_vocals.wav
 ```
+
+With `--mode custom --stems vocals,drums`:
+
+```
+stems/
+└── song_name/
+    ├── vocals.wav
+    └── drums.wav
+```
+
+**Separation modes** (`splitter info` lists these):
+
+| Mode | CLI | Output |
+|------|-----|--------|
+| `full` | default | All four stems |
+| `vocal_split` | `--mode vocal_split` | `vocals` + `no_vocals` (same as `--two-stems vocals`) |
+| `custom` | `--mode custom --stems vocals,drums` | Only the listed stems |
 
 ---
 
@@ -179,12 +211,12 @@ YouTube audio is stored temporarily under `%TEMP%\AudioSplitter\downloads\` and 
 Every push to `main` creates a tagged GitHub Release with a Windows build:
 
 1. Open the repository **Releases** page on GitHub
-2. Download `AudioSplitter-{version}-Windows-x64.zip` (for example `AudioSplitter-0.1.2-Windows-x64.zip`)
+2. Download `AudioSplitter-{version}-Windows-x64.zip` (for example `AudioSplitter-0.1.12-Windows-x64.zip`)
 3. Extract the folder and run `AudioSplitter.exe`
 
 Add notes under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) before pushing to `main`. CI
-auto-increments the patch version (`0.1.1` → `0.1.2`), creates the changelog section, and
-publishes release tag `v0.1.2`.
+auto-increments the patch version (`0.1.11` → `0.1.12`), creates the changelog section, and
+publishes release tag `v0.1.12`.
 
 The release bundle includes `ffmpeg.exe` for MP3/FLAC/M4A support and **CPU-only PyTorch** so the zip fits GitHub's 2 GB upload limit. Separation runs on CPU; for GPU acceleration, build locally with CUDA wheels (below). Model weights still download on first run (~1.3 GB).
 
@@ -198,7 +230,7 @@ GitHub releases match the **CPU** build (same as CI). For GPU support, use the C
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller yt-dlp
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[desktop]" --no-deps
 pip install typer rich
@@ -209,7 +241,7 @@ CPU-only build (matches the published release zip):
 
 ```powershell
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller
+pip install dora-search einops "julius>=0.2.3" "lameenc>=1.2" openunmix pyyaml tqdm pywebview pyinstaller yt-dlp
 pip install --no-deps "demucs @ git+https://github.com/adefossez/demucs@b9ab48cad45976ba42b2ff17b229c071f0df9390"
 pip install -e ".[desktop]" --no-deps
 pip install typer rich
@@ -267,4 +299,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
 ## License
 
-Splitter is application code around Demucs. Demucs is MIT-licensed; see the [Demucs repository](https://github.com/adefossez/demucs) for model terms and attribution. The original Meta repository is [archived](https://github.com/facebookresearch/demucs).
+Audio Splitter is application code around Demucs. Demucs is MIT-licensed; see the [Demucs repository](https://github.com/adefossez/demucs) for model terms and attribution. The original Meta repository is [archived](https://github.com/facebookresearch/demucs).
